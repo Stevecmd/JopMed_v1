@@ -1,26 +1,136 @@
-header {
-    background: white;
-    height: 70px;
+/* 
+** The Header Media Queries **
+*/
+.brand {
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center; /* Center the brand text */
+}
+
+.site-header {
+    position: relative;
+    background-color: #def7ff;
+    display: flex;
+    align-items: center;
+    height: auto; /* Ensure the header height is auto to fit its content */
+}
+
+.site-header__wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
     width: 100%;
-    border-bottom: 1px solid #CCCCCC;
 }
-header .logo {
-    background: url("../images/jopmed-logo.svg") no-repeat;
-    background-size: contain;
-    background-position: left;
-    left: 20px;
-    height: 100%;
-    width: 12.5%;
+
+.site-header__start {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the logo and brand vertically */
 }
-header #api_status {
-    float: right;
-    width: 40px;
-    height: 40px;
-    background-color: #cccccc;
-    border-radius: 50%;
-    margin-right: 30px;
-    margin-top: 15px;
+
+.logo img {
+    width: 50px;
+    height: auto;
+    margin-bottom: 10px; /* Add space between the logo and brand */
 }
-header #api_status.available {
-    background-color: #ff545f;
+
+@media (min-width: 630px) {
+    .site-header__wrapper {
+        justify-content: space-between;
+    }
+}
+
+@media (min-width: 630px) {
+    .site-header__middle {
+        display: flex;
+        justify-content: center;
+        flex-grow: 1;
+    }
+}
+
+@media (max-width: 629px) {
+    .site-header__end {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding-right: 1rem;
+    }
+}
+
+@media (min-width: 630px) {
+    .nav__wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        list-style: none; /* Remove bullet points */
+    }
+}
+
+@media (max-width: 629px) {
+    .nav__wrapper {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        z-index: -1;
+        background-color: #d9f0f7;
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(-100%);
+        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        list-style: none; /* Remove bullet points */
+    }
+    .nav__wrapper.active {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav__item a,
+.nav__item button {
+    display: block;
+    padding: 1rem;
+    list-style: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.nav__toggle {
+    display: none;
+    max-height: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    margin-bottom: 10px;
+}
+
+@media (max-width: 629px) {
+    .nav__toggle {
+        display: block;
+        position: relative;
+    }
+    .site-header__end {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+    }
+}
+
+.button {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    border-radius: 4px;
+    text-decoration: none;
 }

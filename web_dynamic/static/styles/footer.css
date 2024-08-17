@@ -1,16 +1,25 @@
-footer {
-    position: fixed;
-    background: white;
-    height: 60px;
-    width: 100%;
-    bottom: 0;
-    border-top: 1px solid #CCCCCC;
-}
-footer p {
-    position: absolute;
-    text-align: center;
-    top: 10%;
-    bottom: 0;
-    right: 0;
-    left: 0;
-}
+/* footer.css */
+.footer-nav {
+    margin-top: 1rem;
+  }
+  
+  .footer-nav__wrapper {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .footer-nav__wrapper .nav__item {
+    margin: 0.5rem;
+  }
+  
+  .footer-nav__wrapper .nav__item a {
+    text-decoration: none;
+    color: #007bff;
+  }
+  
+  .footer-nav__wrapper .nav__item a:hover {
+    text-decoration: underline;
+  }
