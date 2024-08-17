@@ -1,0 +1,6 @@
+sqlalchemy
+bcrypt
+pep8
+flask
+flasgger
+flask_cors
