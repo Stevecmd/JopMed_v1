@@ -1,0 +1,5 @@
+myvenv/*
+__pycache__/
+file.json
+api/v1/views/documentation/*/*.yml
+venv/*
