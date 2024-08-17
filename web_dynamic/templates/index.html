@@ -6,19 +6,63 @@
     <link rel="stylesheet" type="text/css" href="../static/styles/header.css">
     <link rel="stylesheet" type="text/css" href="../static/styles/footer.css">
     <link rel="stylesheet" type="text/css" href="../static/styles/filters.css">
-    <link type="text/css" rel="stylesheet" href="../static/styles/places.css">
+    <link rel="stylesheet" href="../static/styles/reset.min.css" />
+    <link rel="stylesheet" href="../static/styles/style.css" />
     <link rel="icon" href="../static/images/jopmed-logo.svg" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript" src="../static/scripts/jopmed.js"></script>
     <title>JopMed</title>
   </head>
   <body>
-    <header>
-      <div class="logo"></div>
+    <!-- Header Start -->
+    <header class="site-header">
+      <div class="wrapper site-header__wrapper">
+        <div class="site-header__start">
+          <div class="logo">
+            <img src="../static/images/jopmed-logo.svg" alt="JopMed Logo" />
+          </div>
+          <a href="#" class="brand">JopMed Supplies</a>
+        </div>
+        <div class="site-header__middle">
+          <nav class="nav">
+            <ul class="nav__wrapper">
+              <li class="nav__item"><a href="#">Home</a></li>
+              <li class="nav__item"><a href="#">About</a></li>
+              <li class="nav__item"><a href="#">Services</a></li>
+              <li class="nav__item"><a href="#">Products</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="site-header__end">
+          <button class="nav__toggle" id="sign-in-button" aria-expanded="false" type="button">
+            Sign in
+          </button>
+        </div>
+      </div>
     </header>
+    <!-- Header End -->
+
+    <main>
+      <!-- Main content goes here -->
+    </main>
 
     <footer>
       <p>JopMed Online Store</p>
+      <nav class="footer-nav">
+        <ul class="footer-nav__wrapper">
+          <li class="nav__item"><a href="#">Categories</a></li>
+          <li class="nav__item"><a href="#">Contact</a></li>
+          <li class="nav__item"><a href="#">Sign In</a></li>
+          <li class="nav__item"><a href="#">Sign Up</a></li>
+          <li class="nav__item"><a href="#">Cart</a></li>
+          <li class="nav__item"><a href="#">Orders</a></li>
+          <li class="nav__item"><a href="#">Account</a></li>
+          <li class="nav__item"><a href="#">Shipping Information</a></li>
+          <li class="nav__item"><a href="#">Reviews</a></li>
+          <li class="nav__item"><a href="#">Admin</a></li>
+        </ul>
+      </nav>
     </footer>
+    <script src="../static/scripts/header.js"></script>
   </body>
 </html>
