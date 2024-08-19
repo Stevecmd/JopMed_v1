@@ -1,10 +1,23 @@
+# Run the application
 Starting a python env named myvenv:
 ```sh
-python -m venv myvenv
+python3 -m venv myvenv
 source myvenv/bin/activate
 deactivate
 ```
+Install the required packages:
+```sh
+pip install -r requirements.txt
+```
+### Errors:
+In the event of an error `Import "pycodestyle" could not be resolved`
+Select the Python Interpreter: Make sure that Visual Studio Code is using the correct Python interpreter from your virtual environment. Do this by:
 
+- Opening the Command Palette (`Ctrl+Shift+P`).
+- Typing `Python: Select Interpreter`.
+- Selecting the interpreter from your virtual environment (it should be something like `myvenv/bin/python`).
+
+# MySQL
 To set an empty password for the MySQL root user, follow these steps:
 Log in to MySQL as the root user using sudo:
 `sudo mysql -u root`
@@ -29,8 +42,6 @@ Run the cat command again with the updated root user credentials:
 `cat jopmed-dump-prod.sql| mysql -u root -p`
 
 `cat jopmed-dump-prod.sql | mysql -u root --password=""`
-
-`JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db python3 -m web_flask.7-states_list`
 
 
 - JOPMED is alive!
@@ -70,3 +81,5 @@ Run the cat command again with the updated root user credentials:
 - API status
 `JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_PORT=5001 python3 -m api.v1.app`
 
+Automatically update the `requirements.txt` file:
+`pip freeze > requirements.txt`
