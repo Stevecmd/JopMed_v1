@@ -38,7 +38,7 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Reviews": Reviews,
            "Roles": Roles, "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
-           "User_Roles": User_Roles, "User": User }
+           "User_Roles": User_Roles, "User": User}
 
 
 class JOPMEDCommand(cmd.Cmd):

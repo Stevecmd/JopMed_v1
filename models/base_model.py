@@ -6,15 +6,15 @@ Contains class BaseModel
 from datetime import datetime, timezone
 import sys
 import os
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import models
 from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 time = "%Y-%m-%dT%H:%M:%S.%f"
 

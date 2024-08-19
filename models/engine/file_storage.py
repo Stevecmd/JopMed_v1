@@ -33,13 +33,13 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Doctors": Doctors, "File_Uploads": File_Uploads,
            "Inventory": Inventory, "Order_Items": Order_Items,
            "Orders": Orders, "Payment_Information": Payment_Information,
-           "Payments": Payments, "Product_categories": Product_Categories,
+           "Payments": Payments, "Product_Categories": Product_Categories,
            "Product_Tags": Product_Tags, "Product": Product_Tags,
            "Products": Products, "Products": Products,
            "Reviews": Reviews,
            "Roles": Roles, "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
-           "User_Roles": User_Roles, "User": User }
+           "User_Roles": User_Roles, "User": User}
 
 
 class FileStorage:
