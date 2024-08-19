@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """ holds class Addresses"""
-import datetime
+from datetime import datetime, timezone
 import models
 from models.base_model import BaseModel, Base
 from os import getenv
@@ -11,8 +11,8 @@ from sqlalchemy.orm import relationship
 
 class Addresses(BaseModel, Base):
     """Representation of Addresses """
+    __tablename__ = 'addresses'
     if models.storage_t == "db":
-        __tablename__ = 'states'
         id = Column(String(60), primary_key=True, nullable=False)
         user_id = Column(String(60), ForeignKey('users.id'), nullable=False)
         city = Column(String(255), nullable=False)
@@ -22,20 +22,10 @@ class Addresses(BaseModel, Base):
         phone_number = Column(String(255))
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+        orders = relationship("Orders", back_populates="address")
     else:
         name = ""
 
     def __init__(self, *args, **kwargs):
-        """initializes state"""
+        """initializes addresses"""
         super().__init__(*args, **kwargs)
-
-    # if models.storage_t != "db":
-        # @property
-        # def cities(self):
-        #     """getter for list of city instances related to the state"""
-        #     city_list = []
-        #     all_cities = models.storage.all(City)
-        #     for city in all_cities.values():
-        #         if city.state_id == self.id:
-        #             city_list.append(city)
-        #     return city_list

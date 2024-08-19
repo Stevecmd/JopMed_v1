@@ -5,26 +5,32 @@ import models
 from models.base_model import BaseModel, Base
 from os import getenv
 import sqlalchemy
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.orm import relationship
 import bcrypt
+from datetime import datetime
 
 
 class User(BaseModel, Base):
     """Representation of a user """
     if models.storage_t == 'db':
         __tablename__ = 'users'
-        username = Column(String(128), nullable=False, unique=True)
-        email = Column(String(128), nullable=False)
+        username = Column(String(64), nullable=False, unique=True)
+        email = Column(String(120), nullable=False, unique=True)
         password = Column(String(128), nullable=False)
-        first_name = Column(String(128), nullable=True)
-        last_name = Column(String(128), nullable=True)
+        first_name = Column(String(300), nullable=False)
+        last_name = Column(String(300), nullable=False)
+        created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+        updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+        comments = relationship("Comments", back_populates="user")
+        orders = relationship("Orders", back_populates="user")
     else:
         username = ""
         email = ""
         password = ""
         first_name = ""
         last_name = ""
+        comments = []
 
     def __init__(self, *args, **kwargs):
         """initializes user"""
