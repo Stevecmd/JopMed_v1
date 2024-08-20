@@ -27,9 +27,9 @@ from models.tags import Tags
 from models.users_roles import User_Roles
 from models.users import User
 from os import getenv
-import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+
 
 classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Categories": Categories, "Comments": Comments,

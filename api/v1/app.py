@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 """ Flask Application """
+from api.v1.views import app_views
 from models import storage
 from os import environ
 from flask import Flask, render_template, make_response, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
 from flasgger.utils import swag_from
-from. import app  
-from api.v1.views import app_views
 
-app.register_blueprint(app_views) 
+app = Flask(__name__, template_folder='./templates', static_folder='static')
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+app.register_blueprint(app_views)
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}}) 
 
@@ -31,6 +32,12 @@ def not_found(error):
     return make_response(jsonify({'error': "Not found"}), 404)
 
 
+app.config['SWAGGER'] = {
+    'title': 'JOPMED Restful API',
+    'ui-version': 3
+}
+
+Swagger(app)
 
 if __name__ == "__main__":
     """ Main Function """
@@ -40,4 +47,4 @@ if __name__ == "__main__":
         host = '0.0.0.0'
     if not port:
         port = '5000'
-    app.run(host=host, port=port, threaded=True)
+    app.run(host=host, port=port, threaded=True, debug=True)
