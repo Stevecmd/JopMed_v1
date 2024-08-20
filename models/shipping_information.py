@@ -25,3 +25,7 @@ class Shipping_Information(BaseModel, Base):
         user = relationship("User", back_populates="shipping_information")
         address = relationship("Address", back_populates="shipping_information")
         shipping_method = relationship("ShippingMethod", back_populates="shipping_information")
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

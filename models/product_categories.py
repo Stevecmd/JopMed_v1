@@ -14,3 +14,11 @@ class Product_Categories(BaseModel, Base):
         __tablename__ = 'product_categories'
         product_id = Column(Integer, ForeignKey('products.id'), primary_key=True, nullable=False)
         category_id = Column(Integer, ForeignKey('categories.id'), primary_key=True, nullable=False)
+
+    else:
+        product_id = ""
+        category_id = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

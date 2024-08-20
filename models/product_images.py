@@ -18,3 +18,13 @@ class Product_Images(BaseModel, Base):
         image_url = Column(String(255), nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
+
+    else:
+        product_id = ""
+        image_url = ""
+        created_at = ""
+        updated_at = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

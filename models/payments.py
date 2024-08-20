@@ -21,3 +21,16 @@ class Payments(BaseModel, Base):
         payment_date = Column(DateTime, default=datetime.utcnow, nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
+
+    else:
+        order_id = ""
+        payment_status = ""
+        amount = 0
+        transaction_id = ""
+        payment_date = ""
+        created_at = ""
+        updated_at = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

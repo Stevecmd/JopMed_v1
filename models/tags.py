@@ -22,3 +22,7 @@ class Tags(BaseModel, Base):
 
         # Relationships (if needed)
         products = relationship("Product", secondary="products_tags", back_populates="tags")
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

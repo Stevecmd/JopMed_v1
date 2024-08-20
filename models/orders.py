@@ -25,7 +25,14 @@ class Orders(BaseModel, Base):
        address = relationship("Address", back_populates="orders")
 
     else:
-        name = ""
+        user_id = ""
+        address_id = ""
+        status = ""
+        payment_method = ""
+        total_amount = 0
+        created_at = ""
+        updated_at = ""
+
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""

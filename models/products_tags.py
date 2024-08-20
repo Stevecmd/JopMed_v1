@@ -14,3 +14,8 @@ class Product_Tags(BaseModel, Base):
         __tablename__ = 'products_tags'
         product_id = Column(Integer, ForeignKey('products.id'), primary_key=True, nullable=False)
         tag_id = Column(Integer, ForeignKey('tags.id'), primary_key=True, nullable=False)
+
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

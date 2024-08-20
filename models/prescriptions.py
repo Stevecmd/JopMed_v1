@@ -21,3 +21,16 @@ class Prescriptions(BaseModel, Base):
         instructions = Column(String(255), nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
+
+    else:
+        user_id = ""
+        doctor_id = ""
+        medication = ""
+        dosage = ""
+        instructions = ""
+        created_at = ""
+        updated_at = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

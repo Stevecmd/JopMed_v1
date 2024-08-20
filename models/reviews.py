@@ -22,3 +22,7 @@ class Reviews(BaseModel, Base):
 
         user = relationship("User", back_populates="reviews")
         product = relationship("Product", back_populates="reviews")
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

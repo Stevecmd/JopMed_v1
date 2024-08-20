@@ -18,3 +18,7 @@ class User_Roles(BaseModel, Base):
         # Relationships (if needed)
         user = relationship("User", back_populates="roles")
         role = relationship("Role", back_populates="users")
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

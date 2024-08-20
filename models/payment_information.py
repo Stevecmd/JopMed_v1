@@ -21,3 +21,14 @@ class Payment_Information(BaseModel, Base):
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
+    else:
+        user_id = ""
+        card_number = ""
+        card_expiry_date = ""
+        card_cvv = ""
+        created_at = ""
+        updated_at = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes addresses"""
+        super().__init__(*args, **kwargs)

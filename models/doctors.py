@@ -16,3 +16,11 @@ class Doctors(BaseModel, Base):
         name = Column(String(128), nullable=False)
         specialization = Column(String(128), nullable=False)
         phone_number = Column(String(128), unique=True, nullable=False)
+    else:
+        id = ""
+        name = ""
+        specialization = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes comment"""
+        super().__init__(*args, **kwargs)
