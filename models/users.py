@@ -9,7 +9,6 @@ from sqlalchemy import Column, String, DateTime, Table, ForeignKey
 from sqlalchemy.orm import relationship
 import bcrypt
 from datetime import datetime
-# from models.users_roles import User_Roles
 
 
 class User(BaseModel, Base):
@@ -26,8 +25,10 @@ class User(BaseModel, Base):
         comments = relationship("Comments", back_populates="user")
         orders = relationship("Orders", back_populates="user")
         reviews = relationship("Reviews", back_populates="user")
-        shipping_information = relationship("Shipping_Information", back_populates="user")
-        # roles = relationship("Roles", secondary="user_roles", back_populates="users")
+        shipping_information = relationship(
+            "Shipping_Information",
+            back_populates="user"
+        )
 
     else:
         username = ""

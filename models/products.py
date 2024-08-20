@@ -4,7 +4,17 @@ import models
 from models.base_model import BaseModel, Base
 from os import getenv
 import sqlalchemy
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table, Text, DateTime, DECIMAL
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Float,
+    ForeignKey,
+    Table,
+    Text,
+    DateTime,
+    DECIMAL
+)
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -20,12 +30,21 @@ class Products(BaseModel, Base):
         category = Column(String(255))
         slug = Column(String(255))
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-        updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+        updated_at = Column(
+            DateTime,
+            default=datetime.utcnow,
+            onupdate=datetime.utcnow,
+            nullable=False
+        )
         comments = relationship("Comments", back_populates="product")
         inventory_items = relationship("Inventory", back_populates="product")
         order_items = relationship("Order_Items", back_populates="product")
         reviews = relationship("Reviews", back_populates="product")
-        tags = relationship("Tags", secondary="products_tags", back_populates="products")
+        tags = relationship(
+            "Tags",
+            secondary="products_tags",
+            back_populates="products"
+        )
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""

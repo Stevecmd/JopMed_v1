@@ -15,9 +15,12 @@ class Roles(BaseModel, Base):
         name = Column(String(255), nullable=False, unique=True)
         description = Column(Text, nullable=True)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-        updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-        # user_roles = relationship("User_Roles", back_populates="role")
-        # users = relationship("User", secondary="user_roles", back_populates="roles")
+        updated_at = Column(
+            DateTime,
+            default=datetime.utcnow,
+            onupdate=datetime.utcnow,
+            nullable=False
+        )
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""
