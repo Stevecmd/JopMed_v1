@@ -26,7 +26,7 @@ from flasgger.utils import swag_from
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
-cors = CORS(app, resources={r"/*": {"origins": "*"}}) 
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.teardown_appcontext
@@ -53,6 +53,7 @@ app.config['SWAGGER'] = {
 
 Swagger(app)
 
+
 @app.route('/', strict_slashes=False)
 @app.route('/jopmed-home', strict_slashes=False)
 def jopmed():
@@ -65,12 +66,14 @@ def get_users():
     users = storage.all(User).values()
     return jsonify([user.to_dict() for user in users])
 
+
 @app.route('/users/<user_id>', methods=['GET'])
 def get_user(user_id):
     user = storage.get(User, user_id)
     if not user:
         return not_found(404)
     return jsonify(user.to_dict())
+
 
 @app.route('/users', methods=['POST'])
 def create_user():
@@ -80,6 +83,7 @@ def create_user():
     user = User(**data)
     user.save()
     return jsonify(user.to_dict()), 201
+
 
 @app.route('/users/<user_id>', methods=['PUT'])
 def update_user(user_id):
@@ -94,6 +98,7 @@ def update_user(user_id):
     user.save()
     return jsonify(user.to_dict())
 
+
 @app.route('/users/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = storage.get(User, user_id)
@@ -103,11 +108,13 @@ def delete_user(user_id):
     storage.save()
     return jsonify({}), 200
 
+
 # Address Routes
 @app.route('/addresses', methods=['GET'])
 def get_addresses():
     addresses = storage.all(Addresses).values()
     return jsonify([address.to_dict() for address in addresses])
+
 
 @app.route('/addresses/<address_id>', methods=['GET'])
 def get_address(address_id):
@@ -115,6 +122,7 @@ def get_address(address_id):
     if not address:
         return not_found(404)
     return jsonify(address.to_dict())
+
 
 @app.route('/addresses', methods=['POST'])
 def create_address():
@@ -124,6 +132,7 @@ def create_address():
     address = Addresses(**data)
     address.save()
     return jsonify(address.to_dict()), 201
+
 
 @app.route('/addresses/<address_id>', methods=['PUT'])
 def update_address(address_id):
@@ -138,6 +147,7 @@ def update_address(address_id):
     address.save()
     return jsonify(address.to_dict())
 
+
 @app.route('/addresses/<address_id>', methods=['DELETE'])
 def delete_address(address_id):
     address = storage.get(Addresses, address_id)
@@ -147,11 +157,13 @@ def delete_address(address_id):
     storage.save()
     return jsonify({}), 200
 
+
 # Order Routes
 @app.route('/orders', methods=['GET'])
 def get_orders():
     orders = storage.all(Orders).values()
     return jsonify([order.to_dict() for order in orders])
+
 
 @app.route('/orders/<order_id>', methods=['GET'])
 def get_order(order_id):
@@ -159,6 +171,7 @@ def get_order(order_id):
     if not order:
         return make_response(jsonify({'error': "Not found"}), 404)
     return jsonify(order.to_dict())
+
 
 @app.route('/orders', methods=['POST'])
 def create_order():
@@ -168,6 +181,7 @@ def create_order():
     order = Orders(**data)
     order.save()
     return jsonify(order.to_dict()), 201
+
 
 @app.route('/orders/<order_id>', methods=['PUT'])
 def update_order(order_id):
@@ -182,6 +196,7 @@ def update_order(order_id):
     order.save()
     return jsonify(order.to_dict())
 
+
 @app.route('/orders/<order_id>', methods=['DELETE'])
 def delete_order(order_id):
     order = storage.get(Orders, order_id)
@@ -191,11 +206,13 @@ def delete_order(order_id):
     storage.save()
     return jsonify({}), 200
 
+
 # Doctor Routes
 @app.route('/doctors', methods=['GET'])
 def get_doctors():
     doctors = storage.all(Doctors).values()
     return jsonify([doctor.to_dict() for doctor in doctors])
+
 
 @app.route('/doctors/<doctor_id>', methods=['GET'])
 def get_doctor(doctor_id):
@@ -203,6 +220,7 @@ def get_doctor(doctor_id):
     if not doctor:
         return not_found(404)
     return jsonify(doctor.to_dict())
+
 
 @app.route('/doctors', methods=['POST'])
 def create_doctor():
@@ -212,6 +230,7 @@ def create_doctor():
     doctor = Doctors(**data)
     doctor.save()
     return jsonify(doctor.to_dict()), 201
+
 
 @app.route('/doctors/<doctor_id>', methods=['PUT'])
 def update_doctor(doctor_id):
@@ -226,6 +245,7 @@ def update_doctor(doctor_id):
     doctor.save()
     return jsonify(doctor.to_dict())
 
+
 @app.route('/doctors/<doctor_id>', methods=['DELETE'])
 def delete_doctor(doctor_id):
     doctor = storage.get(Doctors, doctor_id)
@@ -235,11 +255,13 @@ def delete_doctor(doctor_id):
     storage.save()
     return jsonify({}), 200
 
+
 # Comment Routes
 @app.route('/comments', methods=['GET'])
 def get_comments():
     comments = storage.all(Comments).values()
     return jsonify([comment.to_dict() for comment in comments])
+
 
 @app.route('/comments/<comment_id>', methods=['GET'])
 def get_comment(comment_id):
@@ -247,6 +269,7 @@ def get_comment(comment_id):
     if not comment:
         return make_response(jsonify({'error': "Not found"}), 404)
     return jsonify(comment.to_dict())
+
 
 @app.route('/comments', methods=['POST'])
 def create_comment():
@@ -256,6 +279,7 @@ def create_comment():
     comment = Comments(**data)
     comment.save()
     return jsonify(comment.to_dict()), 201
+
 
 @app.route('/comments/<comment_id>', methods=['PUT'])
 def update_comment(comment_id):
@@ -270,6 +294,7 @@ def update_comment(comment_id):
     comment.save()
     return jsonify(comment.to_dict())
 
+
 @app.route('/comments/<comment_id>', methods=['DELETE'])
 def delete_comment(comment_id):
     comment = storage.get(Comments, comment_id)
@@ -279,11 +304,13 @@ def delete_comment(comment_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Category Routes
 @app.route('/categories', methods=['GET'])
 def get_categories():
     categories = storage.all(Categories).values()
     return jsonify([category.to_dict() for category in categories])
+
 
 @app.route('/categories/<category_id>', methods=['GET'])
 def get_category(category_id):
@@ -291,6 +318,7 @@ def get_category(category_id):
     if not category:
         return make_response(jsonify({'error': "Not found"}), 404)
     return jsonify(category.to_dict())
+
 
 @app.route('/categories', methods=['POST'])
 def create_category():
@@ -300,6 +328,7 @@ def create_category():
     category = Categories(**data)
     category.save()
     return jsonify(category.to_dict()), 201
+
 
 @app.route('/categories/<category_id>', methods=['PUT'])
 def update_category(category_id):
@@ -314,6 +343,7 @@ def update_category(category_id):
     category.save()
     return jsonify(category.to_dict())
 
+
 @app.route('/categories/<category_id>', methods=['DELETE'])
 def delete_category(category_id):
     category = storage.get(Categories, category_id)
@@ -323,16 +353,19 @@ def delete_category(category_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Product Categories Routes
 @app.route('/product_categories', methods=['GET'])
 def get_product_categories():
     product_categories = storage.all(Product_Categories).values()
     return jsonify([pc.to_dict() for pc in product_categories])
 
+
 @app.route('/product_categories/<product_id>', methods=['GET'])
 def get_product_categories_by_product(product_id):
     product_categories = storage.filter(Product_Categories, product_id=product_id)
     return jsonify([pc.to_dict() for pc in product_categories])
+
 
 @app.route('/product_categories', methods=['POST'])
 def create_product_category():
@@ -345,6 +378,7 @@ def create_product_category():
     new_pc.save()
     return make_response(jsonify(new_pc.to_dict()), 201)
 
+
 @app.route('/product_categories/<product_id>/<category_id>', methods=['DELETE'])
 def delete_product_category(product_id, category_id):
     pc = storage.get(Product_Categories, (product_id, category_id))
@@ -354,11 +388,13 @@ def delete_product_category(product_id, category_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Prescriptions Routes!
 @app.route('/prescriptions', methods=['GET'])
 def get_prescriptions():
     prescriptions = storage.all(Prescriptions).values()
     return jsonify([prescription.to_dict() for prescription in prescriptions])
+
 
 @app.route('/prescriptions/<prescription_id>', methods=['GET'])
 def get_prescription(prescription_id):
@@ -366,6 +402,7 @@ def get_prescription(prescription_id):
     if not prescription:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(prescription.to_dict())
+
 
 @app.route('/prescriptions', methods=['POST'])
 def create_prescription():
@@ -378,6 +415,7 @@ def create_prescription():
     new_prescription.save()
     return make_response(jsonify(new_prescription.to_dict()), 201)
 
+
 @app.route('/prescriptions/<prescription_id>', methods=['DELETE'])
 def delete_prescription(prescription_id):
     prescription = storage.get(Prescriptions, prescription_id)
@@ -387,11 +425,13 @@ def delete_prescription(prescription_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Products Routes
 @app.route('/products', methods=['GET'])
 def get_products():
     products = storage.all(Products).values()
     return jsonify([product.to_dict() for product in products])
+
 
 @app.route('/products/<product_id>', methods=['GET'])
 def get_product(product_id):
@@ -399,6 +439,7 @@ def get_product(product_id):
     if not product:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(product.to_dict())
+
 
 @app.route('/products', methods=['POST'])
 def create_product():
@@ -410,6 +451,7 @@ def create_product():
     new_product = Products(**data)
     new_product.save()
     return make_response(jsonify(new_product.to_dict()), 201)
+
 
 @app.route('/products/<product_id>', methods=['PUT'])
 def update_product(product_id):
@@ -424,6 +466,7 @@ def update_product(product_id):
     product.save()
     return make_response(jsonify(product.to_dict()), 200)
 
+
 @app.route('/products/<product_id>', methods=['DELETE'])
 def delete_product(product_id):
     product = storage.get(Products, product_id)
@@ -432,6 +475,7 @@ def delete_product(product_id):
     product.delete()
     storage.save()
     return make_response(jsonify({}), 200)
+
 
 # Product Tags Routes
 @app.route('/product_tags', methods=['GET'])
@@ -448,10 +492,12 @@ def get_product_tags():
         })
     return jsonify(product_tags_list)
 
+
 @app.route('/product_tags/<product_id>', methods=['GET'])
 def get_product_tags_by_product(product_id):
     product_tags = storage.filter(Product_Tags, product_id=product_id)
     return jsonify([pt.to_dict() for pt in product_tags])
+
 
 @app.route('/product_tags', methods=['POST'])
 def create_product_tag():
@@ -464,6 +510,7 @@ def create_product_tag():
     new_pt.save()
     return make_response(jsonify(new_pt.to_dict()), 201)
 
+
 @app.route('/product_tags/<product_id>/<tag_id>', methods=['DELETE'])
 def delete_product_tag(product_id, tag_id):
     pt = storage.get(Product_Tags, (product_id, tag_id))
@@ -473,16 +520,19 @@ def delete_product_tag(product_id, tag_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Product Images Routes
 @app.route('/product_images', methods=['GET'])
 def get_product_images():
     product_images = storage.all(Product_Images).values()
     return jsonify([pi.to_dict() for pi in product_images])
 
+
 @app.route('/product_images/<product_id>', methods=['GET'])
 def get_product_images_by_product(product_id):
     product_images = storage.filter(Product_Images, product_id=product_id)
     return jsonify([pi.to_dict() for pi in product_images])
+
 
 @app.route('/product_images', methods=['POST'])
 def create_product_image():
@@ -494,6 +544,7 @@ def create_product_image():
     new_pi = Product_Images(**data)
     new_pi.save()
     return make_response(jsonify(new_pi.to_dict()), 201)
+
 
 @app.route('/product_images/<image_id>', methods=['DELETE'])
 def delete_product_image(image_id):
@@ -511,12 +562,14 @@ def get_shipping_methods():
     shipping_methods = storage.all(Shipping_Methods).values()
     return jsonify([method.to_dict() for method in shipping_methods])
 
+
 @app.route('/shipping_methods/<method_id>', methods=['GET'])
 def get_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
     if not method:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(method.to_dict())
+
 
 @app.route('/shipping_methods', methods=['POST'])
 def create_shipping_method():
@@ -528,6 +581,7 @@ def create_shipping_method():
     new_method = Shipping_Methods(**data)
     new_method.save()
     return make_response(jsonify(new_method.to_dict()), 201)
+
 
 @app.route('/shipping_methods/<method_id>', methods=['PUT'])
 def update_shipping_method(method_id):
@@ -542,6 +596,7 @@ def update_shipping_method(method_id):
     method.save()
     return make_response(jsonify(method.to_dict()), 200)
 
+
 @app.route('/shipping_methods/<method_id>', methods=['DELETE'])
 def delete_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
@@ -551,11 +606,13 @@ def delete_shipping_method(method_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Shipping Information Routes
 @app.route('/shipping_information', methods=['GET'])
 def get_shipping_information():
     shipping_info = storage.all(Shipping_Information).values()
     return jsonify([info.to_dict() for info in shipping_info])
+
 
 @app.route('/shipping_information/<info_id>', methods=['GET'])
 def get_shipping_info(info_id):
@@ -563,6 +620,7 @@ def get_shipping_info(info_id):
     if not info:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(info.to_dict())
+
 
 @app.route('/shipping_information', methods=['POST'])
 def create_shipping_info():
@@ -574,6 +632,7 @@ def create_shipping_info():
     new_info = Shipping_Information(**data)
     new_info.save()
     return make_response(jsonify(new_info.to_dict()), 201)
+
 
 @app.route('/shipping_information/<info_id>', methods=['PUT'])
 def update_shipping_info(info_id):
@@ -588,6 +647,7 @@ def update_shipping_info(info_id):
     info.save()
     return make_response(jsonify(info.to_dict()), 200)
 
+
 @app.route('/shipping_information/<info_id>', methods=['DELETE'])
 def delete_shipping_info(info_id):
     info = storage.get(Shipping_Information, info_id)
@@ -597,11 +657,13 @@ def delete_shipping_info(info_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Roles Routes
 @app.route('/roles', methods=['GET'])
 def get_roles():
     roles = storage.all(Roles).values()
     return jsonify([role.to_dict() for role in roles])
+
 
 @app.route('/roles/<int:role_id>', methods=['GET'])
 def get_role(role_id):
@@ -609,6 +671,7 @@ def get_role(role_id):
     if not role:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(role.to_dict())
+
 
 @app.route('/roles', methods=['POST'])
 def create_role():
@@ -620,6 +683,7 @@ def create_role():
     new_role = Roles(**data)
     new_role.save()
     return make_response(jsonify(new_role.to_dict()), 201)
+
 
 @app.route('/roles/<int:role_id>', methods=['PUT'])
 def update_role(role_id):
@@ -634,6 +698,7 @@ def update_role(role_id):
     role.save()
     return make_response(jsonify(role.to_dict()), 200)
 
+
 @app.route('/roles/<int:role_id>', methods=['DELETE'])
 def delete_role(role_id):
     role = storage.get(Roles, role_id)
@@ -643,11 +708,13 @@ def delete_role(role_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
 # Reviews Routes
 @app.route('/reviews', methods=['GET'])
 def get_reviews():
     reviews = storage.all(Reviews).values()
     return jsonify([review.to_dict() for review in reviews])
+
 
 @app.route('/reviews/<review_id>', methods=['GET'])
 def get_review(review_id):
@@ -655,6 +722,7 @@ def get_review(review_id):
     if not review:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(review.to_dict())
+
 
 @app.route('/reviews', methods=['POST'])
 def create_review():
@@ -666,6 +734,7 @@ def create_review():
     new_review = Reviews(**data)
     new_review.save()
     return make_response(jsonify(new_review.to_dict()), 201)
+
 
 @app.route('/reviews/<review_id>', methods=['PUT'])
 def update_review(review_id):
@@ -679,6 +748,7 @@ def update_review(review_id):
         setattr(review, key, value)
     review.save()
     return make_response(jsonify(review.to_dict()), 200)
+
 
 @app.route('/reviews/<review_id>', methods=['DELETE'])
 def delete_review(review_id):
