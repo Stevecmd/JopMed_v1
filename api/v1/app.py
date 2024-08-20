@@ -363,7 +363,10 @@ def get_product_categories():
 
 @app.route('/product_categories/<product_id>', methods=['GET'])
 def get_product_categories_by_product(product_id):
-    product_categories = storage.filter(Product_Categories, product_id=product_id)
+    product_categories = storage.filter(
+        Product_Categories,
+        product_id=product_id
+    )
     return jsonify([pc.to_dict() for pc in product_categories])
 
 
@@ -373,13 +376,19 @@ def create_product_category():
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
     if 'product_id' not in data or 'category_id' not in data:
-        return make_response(jsonify({'error': 'Missing product_id or category_id'}), 400)
+        return make_response(
+            jsonify({
+                'error': 'Missing product_id or category_id'
+                }), 400)
     new_pc = Product_Categories(**data)
     new_pc.save()
     return make_response(jsonify(new_pc.to_dict()), 201)
 
 
-@app.route('/product_categories/<product_id>/<category_id>', methods=['DELETE'])
+@app.route(
+    '/product_categories/<product_id>/<category_id>',
+    methods=['DELETE']
+)
 def delete_product_category(product_id, category_id):
     pc = storage.get(Product_Categories, (product_id, category_id))
     if not pc:
@@ -409,8 +418,15 @@ def create_prescription():
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
-    if 'user_id' not in data or 'doctor_id' not in data or 'medication' not in data:
-        return make_response(jsonify({'error': 'Missing user_id, doctor_id or medication'}), 400)
+    if (
+        'user_id' not in data or
+        'doctor_id' not in data or
+        'medication' not in data
+    ):
+        return make_response(
+            jsonify({
+                'error': 'Missing user_id, doctor_id or medication'
+                }), 400)
     new_prescription = Prescriptions(**data)
     new_prescription.save()
     return make_response(jsonify(new_prescription.to_dict()), 201)
@@ -447,7 +463,10 @@ def create_product():
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
     if 'name' not in data or 'price' not in data or 'stock' not in data:
-        return make_response(jsonify({'error': 'Missing name, price or stock'}), 400)
+        return make_response(
+            jsonify({
+                'error': 'Missing name, price or stock'
+            }), 400)
     new_product = Products(**data)
     new_product.save()
     return make_response(jsonify(new_product.to_dict()), 201)
@@ -505,7 +524,9 @@ def create_product_tag():
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
     if 'product_id' not in data or 'tag_id' not in data:
-        return make_response(jsonify({'error': 'Missing product_id or tag_id'}), 400)
+        return make_response(
+            jsonify({
+                'error': 'Missing product_id or tag_id'}), 400)
     new_pt = Product_Tags(**data)
     new_pt.save()
     return make_response(jsonify(new_pt.to_dict()), 201)
@@ -540,7 +561,12 @@ def create_product_image():
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
     if 'product_id' not in data or 'image_url' not in data:
-        return make_response(jsonify({'error': 'Missing product_id or image_url'}), 400)
+        return make_response(
+            jsonify({
+                'error': 'Missing product_id or image_url'
+            }),
+            400
+        )
     new_pi = Product_Images(**data)
     new_pi.save()
     return make_response(jsonify(new_pi.to_dict()), 201)
@@ -627,8 +653,17 @@ def create_shipping_info():
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
-    if 'user_id' not in data or 'address_id' not in data or 'shipping_method_id' not in data:
-        return make_response(jsonify({'error': 'Missing user_id, address_id or shipping_method_id'}), 400)
+    if (
+        'user_id' not in data or
+        'address_id' not in data or
+        'shipping_method_id' not in data
+    ):
+        return make_response(
+            jsonify({
+                'error': 'Missing user_id, address_id or shipping_method_id'
+            }),
+            400
+        )
     new_info = Shipping_Information(**data)
     new_info.save()
     return make_response(jsonify(new_info.to_dict()), 201)
@@ -729,8 +764,15 @@ def create_review():
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
-    if 'user_id' not in data or 'product_id' not in data or 'rating' not in data:
-        return make_response(jsonify({'error': 'Missing user_id, product_id or rating'}), 400)
+    if (
+        'user_id' not in data or
+        'product_id' not in data or
+        'rating' not in data
+    ):
+        return make_response(
+            jsonify({'error': 'Missing user_id, product_id or rating'}),
+            400
+        )
     new_review = Reviews(**data)
     new_review.save()
     return make_response(jsonify(new_review.to_dict()), 201)

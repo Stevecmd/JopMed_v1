@@ -21,15 +21,16 @@ from models.roles import Roles
 from models.shipping_information import Shipping_Information
 from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
-# from models.users_roles import User_Roles
 from models.users import User
 from models import storage
-from.. import app  
+from .. import app
+
 from flask import Flask, Blueprint, jsonify, request, abort, render_template
 from api.v1.views import app_views
 
 
 app_views = Blueprint('app_views', __name__, url_prefix='/api/v1')
+
 
 @app_views.route('/status', methods=['GET'], strict_slashes=False)
 def status():
@@ -41,33 +42,36 @@ def status():
 def index():
     return render_template('index.html')
 
-@app.route('/stats', methods=['GET'], strict_slashes=False)  
+
+@app.route('/stats', methods=['GET'], strict_slashes=False)
 def number_objects():
     """ Retrieves the number of each objects by type """
-    classes = { Addresses, BaseModel,
-            Categories,  Comments,
-            Doctors,  File_Uploads,
-            Inventory, Order_Items,
-            Orders, Payment_Information,
-            Payments, Product_Categories,
-            Product_Tags, Product_Tags,
-            Products, Products,
-            Reviews, Roles, Shipping_Information,
-            Shipping_Methods, Tags,
-            User }
-    names = ["Addresses", "BaseModel", "Categories", "Comments", "Doctors", "File_Uploads",
-             "Inventory", "Order_Items", "Orders", "Payment_Information", "Payments",
-             "Product_categories", "Product_Tags", "Product", "Products", "Products",
-             "Reviews", "Roles", "Shipping_Information", "Shipping_Methods", "Tags",
-             "User_Roles", "User"]
+    classes = {Addresses, BaseModel,
+               Categories,  Comments,
+               Doctors,  File_Uploads,
+               Inventory, Order_Items,
+               Orders, Payment_Information,
+               Payments, Product_Categories,
+               Product_Tags, Product_Tags,
+               Products, Products,
+               Reviews, Roles, Shipping_Information,
+               Shipping_Methods, Tags,
+               User}
+    names = ["Addresses", "BaseModel", "Categories", "Comments",
+             "Doctors", "File_Uploads", "Inventory", "Order_Items",
+             "Orders", "Payment_Information", "Payments",
+             "Product_categories", "Product_Tags", "Product", "Products",
+             "Products", "Reviews", "Roles", "Shipping_Information",
+             "Shipping_Methods", "Tags", "User_Roles", "User"]
 
     num_objs = {}
     for i in range(len(classes)):
         num_objs[names[i]] = storage.count(classes[i])
 
     return jsonify(num_objs)
-  
-@app.route('/product_search/', methods=['POST'], strict_slashes=False)  
+
+
+@app.route('/product_search/', methods=['POST'], strict_slashes=False)
 def search_products():
     """Returns a list of products based on the search criteria"""
     if request.get_json() is None:
@@ -82,7 +86,6 @@ def search_products():
 
     list_products = []
 
-
     products = []
     for product in list_products:
         product_dict = product.to_dict()
@@ -91,10 +94,12 @@ def search_products():
         products.append(product_dict)
 
     return jsonify(products)
-  
-@app.route('/')  
-def index():  
+
+
+@app.route('/')
+def index():
     return render_template('index.html')
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
