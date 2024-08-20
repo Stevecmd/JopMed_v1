@@ -354,7 +354,7 @@ def delete_product_category(product_id, category_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
-# Prescriptions Routes
+# Prescriptions Routes!
 @app.route('/prescriptions', methods=['GET'])
 def get_prescriptions():
     prescriptions = storage.all(Prescriptions).values()
@@ -436,8 +436,17 @@ def delete_product(product_id):
 # Product Tags Routes
 @app.route('/product_tags', methods=['GET'])
 def get_product_tags():
+    """Retrieve all product tags"""
     product_tags = storage.all(Product_Tags).values()
-    return jsonify([pt.to_dict() for pt in product_tags])
+    product_tags_list = []
+    for tag in product_tags:
+        product_tags_list.append({
+            'product_id': tag.product_id,
+            'tag_id': tag.tag_id,
+            'created_at': tag.created_at,
+            'updated_at': tag.updated_at
+        })
+    return jsonify(product_tags_list)
 
 @app.route('/product_tags/<product_id>', methods=['GET'])
 def get_product_tags_by_product(product_id):
@@ -594,7 +603,7 @@ def get_roles():
     roles = storage.all(Roles).values()
     return jsonify([role.to_dict() for role in roles])
 
-@app.route('/roles/<role_id>', methods=['GET'])
+@app.route('/roles/<int:role_id>', methods=['GET'])
 def get_role(role_id):
     role = storage.get(Roles, role_id)
     if not role:
@@ -612,7 +621,7 @@ def create_role():
     new_role.save()
     return make_response(jsonify(new_role.to_dict()), 201)
 
-@app.route('/roles/<role_id>', methods=['PUT'])
+@app.route('/roles/<int:role_id>', methods=['PUT'])
 def update_role(role_id):
     role = storage.get(Roles, role_id)
     if not role:
@@ -625,7 +634,7 @@ def update_role(role_id):
     role.save()
     return make_response(jsonify(role.to_dict()), 200)
 
-@app.route('/roles/<role_id>', methods=['DELETE'])
+@app.route('/roles/<int:role_id>', methods=['DELETE'])
 def delete_role(role_id):
     role = storage.get(Roles, role_id)
     if not role:
@@ -679,9 +688,6 @@ def delete_review(review_id):
     review.delete()
     storage.save()
     return make_response(jsonify({}), 200)
-
-
-
 
 
 if __name__ == "__main__":

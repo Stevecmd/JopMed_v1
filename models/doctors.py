@@ -4,7 +4,7 @@ import models
 from models.base_model import BaseModel, Base
 from os import getenv
 import sqlalchemy
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 
 class Doctors(BaseModel, Base):
@@ -13,9 +13,12 @@ class Doctors(BaseModel, Base):
     
     if models.storage_t == 'db':
         id = Column(Integer, primary_key=True, autoincrement=True)
-        name = Column(String(128), nullable=False)
-        specialization = Column(String(128), nullable=False)
-        phone_number = Column(String(128), unique=True, nullable=False)
+        first_name = Column(String(255), nullable=False)
+        last_name = Column(String(255), nullable=False)
+        specialization = Column(String(255), nullable=False)
+        phone_number = Column(String(255), nullable=False, unique=True)
+        created_at = Column(DateTime, nullable=False)
+        updated_at = Column(DateTime, nullable=False)
     else:
         id = ""
         name = ""

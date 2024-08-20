@@ -18,7 +18,8 @@ class Inventory(BaseModel, Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
-    product = relationship("Product", back_populates="inventory_items")
+    # product = relationship("Product", back_populates="inventory_items")
+    product = relationship("Products", back_populates="inventory_items")
 
     def __init__(self, *args, **kwargs):
         """initializes inventory"""

@@ -2,6 +2,8 @@
 """ holds class Shipping_Information"""
 import models
 from models.base_model import BaseModel, Base
+from models.addresses import Addresses
+from models.shipping_methods import Shipping_Methods
 from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
@@ -23,8 +25,8 @@ class Shipping_Information(BaseModel, Base):
 
         # Relationships (if needed)
         user = relationship("User", back_populates="shipping_information")
-        address = relationship("Address", back_populates="shipping_information")
-        shipping_method = relationship("ShippingMethod", back_populates="shipping_information")
+        address = relationship("Addresses", back_populates="shipping_information")
+        shipping_method = relationship("Shipping_Methods", back_populates="shipping_information")
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""

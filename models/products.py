@@ -22,6 +22,10 @@ class Products(BaseModel, Base):
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
         comments = relationship("Comments", back_populates="product")
+        inventory_items = relationship("Inventory", back_populates="product")
+        order_items = relationship("Order_Items", back_populates="product")
+        reviews = relationship("Reviews", back_populates="product")
+        tags = relationship("Tags", secondary="products_tags", back_populates="products")
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""

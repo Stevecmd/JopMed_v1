@@ -21,7 +21,7 @@ class Reviews(BaseModel, Base):
         updated_at = Column(sqlalchemy.DateTime, nullable=False, default=sqlalchemy.func.now(), onupdate=sqlalchemy.func.now())
 
         user = relationship("User", back_populates="reviews")
-        product = relationship("Product", back_populates="reviews")
+        product = relationship("Products", back_populates="reviews")
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""

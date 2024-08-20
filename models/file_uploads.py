@@ -17,7 +17,7 @@ class File_Uploads(BaseModel, Base):
     upload_date = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     
     # Define relationship with Category if needed
-    category = relationship("Category", back_populates="file_uploads")
+    category = relationship("Categories", back_populates="file_uploads")
 
     def __init__(self, *args, **kwargs):
         """Initialization of file uploads"""

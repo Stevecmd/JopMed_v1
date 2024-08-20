@@ -6,7 +6,6 @@ Contains the class DBStorage
 import models
 from models.base_model import BaseModel, Base
 from models.addresses import Addresses
-from models.base_model import BaseModel
 from models.categories import Categories
 from models.comments import Comments
 from models.doctors import Doctors
@@ -24,7 +23,7 @@ from models.roles import Roles
 from models.shipping_information import Shipping_Information
 from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
-from models.users_roles import User_Roles
+# from models.users_roles import User_Roles
 from models.users import User
 from os import getenv
 from sqlalchemy import create_engine
@@ -42,7 +41,7 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Reviews": Reviews,
            "Roles": Roles, "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
-           "User_Roles": User_Roles, "User": User}
+           "User": User}
 
 
 class DBStorage:
@@ -72,7 +71,7 @@ class DBStorage:
             if cls is None or cls is classes[clss] or cls is clss:
                 objs = self.__session.query(classes[clss]).all()
                 for obj in objs:
-                    key = obj.__class__.__name__ + '.' + obj.id
+                    key = obj.__class__.__name__ + '.' + str(obj.id)
                     new_dict[key] = obj
         return (new_dict)
 

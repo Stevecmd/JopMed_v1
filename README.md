@@ -8,7 +8,7 @@ The console is the first segment of the JopMed project.
 * Update attributes of an object
 * Destroy an object
 
-## Table of Content
+## Table of Contents
 
 
 ## Environment
@@ -51,12 +51,28 @@ List of commands this console current supports:
 * `def to_dict(self)` - returns a dictionary containing all keys/values of the instance
 
 Classes inherited from Base Model:
-* [amenity.py](/models/amenity.py)
-* [city.py](/models/city.py)
-* [place.py](/models/place.py)
-* [review.py](/models/review.py)
-* [state.py](/models/state.py)
-* [user.py](/models/user.py)
+* [addresses.py](/models/addresses.py)
+* [categories.py](/models/categories.py)
+* [comments.py](/models/comments.py)
+* [doctors.py](/models/doctors.py)
+* [file_uploads.py](/models/file_uploads.py)
+* [inventory.py](/models/inventory.py)
+* [order_items.py](/models/order_items.py)
+* [orders.py](/models/orders.py)
+* [payment_information.py](/models/payment_information.py)
+* [payments.py](/models/payments.py)
+* [prescriptions.py](/models/prescriptions.py)
+* [product_categories.py](/models/product_categories.py)
+* [product_images.py](/models/product_images.py)
+* [product_tags.py](/models/product_tags.py)
+* [products.py](/models/products.py)
+* [reviews.py](/models/reviews.py)
+* [roles.py](/models/roles.py)
+* [shipping_information.py](/models/shipping_information.py)
+* [shipping_methods.py](/models/shipping_methods.py)
+* [tags.py](/models/tags.py)
+* [user_roles.py](/models/user_roles.py)
+* [users.py](/models/users.py)
 
 #### `/models/engine` directory contains File Storage class that handles JASON serialization and deserialization :
 [file_storage.py](/models/engine/file_storage.py) - serializes instances to a JSON file & deserializes back to instances

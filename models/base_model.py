@@ -10,7 +10,7 @@ import models
 from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, DateTime, Integer
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, as_declarative, declared_attr
 import uuid
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -2,12 +2,13 @@
 """ holds class Place"""
 import models
 from models.base_model import BaseModel, Base
-# from models.amenity import Amenity
 from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from models.orders import Orders
+from models.products import Products
 
 
 class Order_Items(BaseModel, Base):
@@ -23,8 +24,8 @@ class Order_Items(BaseModel, Base):
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
         # Relationships
-        order = relationship("Order", back_populates="order_items")
-        product = relationship("Product", back_populates="order_items")
+        order = relationship("Orders", back_populates="order_items")
+        product = relationship("Products", back_populates="order_items")
 
     else:
         id = ""

@@ -21,7 +21,7 @@ class Comments(BaseModel, Base):
         updated_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False, onupdate=datetime.now(timezone.utc))
 
         # Define relationships
-        product = relationship("Product", back_populates="comments")
+        product = relationship("Products", back_populates="comments")
         user = relationship("User", back_populates="comments")
     else:
         product_id = ""

@@ -21,7 +21,7 @@ class Tags(BaseModel, Base):
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
         # Relationships (if needed)
-        products = relationship("Product", secondary="products_tags", back_populates="tags")
+        products = relationship("Products", secondary="products_tags", back_populates="tags")
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""

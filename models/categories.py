@@ -19,6 +19,9 @@ class Categories(BaseModel, Base):
         description = Column(Text, nullable=True)
         created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
         updated_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False, onupdate=datetime.now(timezone.utc))
+
+        file_uploads = relationship("File_Uploads", back_populates="category")
+
     else:
         name = ""
         slug = ""

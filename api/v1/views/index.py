@@ -21,7 +21,7 @@ from models.roles import Roles
 from models.shipping_information import Shipping_Information
 from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
-from models.users_roles import User_Roles
+# from models.users_roles import User_Roles
 from models.users import User
 from models import storage
 from.. import app  
@@ -54,7 +54,7 @@ def number_objects():
             Products, Products,
             Reviews, Roles, Shipping_Information,
             Shipping_Methods, Tags,
-            User_Roles, User }
+            User }
     names = ["Addresses", "BaseModel", "Categories", "Comments", "Doctors", "File_Uploads",
              "Inventory", "Order_Items", "Orders", "Payment_Information", "Payments",
              "Product_categories", "Product_Tags", "Product", "Products", "Products",
