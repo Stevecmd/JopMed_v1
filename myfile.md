@@ -44,6 +44,7 @@ Run the cat command again with the updated root user credentials:
 `cat jopmed-dump-prod.sql | mysql -u root --password=""`
 
 
+
 - JOPMED is alive!
 `cat jopmed-dump-prod.sql | mysql -uroot -p`
 
@@ -59,7 +60,9 @@ Run the cat command again with the updated root user credentials:
 `JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db ./test_get_count.py`
 
 - Status of your API
-`JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_HOST=0.0.0.0 JOPMED_API_PORT=5000 python3 -m api.v1.app`
+`JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB
+=jopmed_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_HOST=0.0.0.0 JOPMED_API_PORT=5000 python3 -m api.v1.
+app`
 
 `curl -X GET http://0.0.0.0:5000/api/v1/status`
 
