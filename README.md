@@ -186,6 +186,9 @@ EOF  all  create  destroy  help  quit  exit  show  update
 (jopmed_v1) quit
 ```
 
+## Tools
+[SQL-Checker](https://www.coderstool.com/sql-syntax-checker)
+
 ## Bugs
 No known bugs at this time. 
 
