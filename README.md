@@ -16,10 +16,10 @@ This project is interpreted/tested on Ubuntu 14.04 LTS using python3 (version 3.
 
 ### Activate a Virtual environment:
 - Create a Virtual Environment:
-`python3 -m venv venv`
+`python3 -m venv myvenv`
 
 - Activate the Virtual Environment:
-`source venv/bin/activate`
+`source myvenv/bin/activate`
 
 ### Install requirements
 `pip install -r requirements.txt`
@@ -27,7 +27,7 @@ This project is interpreted/tested on Ubuntu 14.04 LTS using python3 (version 3.
 ## Installation
 * Clone this repository: `git clone ""`
 * Access Jopmed directory: `cd JOPMED_V1`
-* Run jopmed(interactively): `./console` and enter command
+* Run jopmed(interactively): `./console.py` and enter command
 * If it doesnt work use an explicit path for example: `python /media/stevecmd/48444E06444DF6EA/ALX/JopMed_v1/console.py`
 * Run jopmed(non-interactively): `echo "<command>" | ./console.py`
 
