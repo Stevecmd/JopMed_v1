@@ -79,10 +79,10 @@ def get_user(user_id):
 def create_user():
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     user = User(**data)
     user.save()
-    return jsonify(user.to_dict()), 201
+    return make_response(jsonify(user.to_dict()), 201)
 
 
 @app.route('/users/<user_id>', methods=['PUT'])
@@ -92,7 +92,7 @@ def update_user(user_id):
         return not_found(404)
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     for key, value in data.items():
         setattr(user, key, value)
     user.save()
@@ -106,7 +106,7 @@ def delete_user(user_id):
         return not_found(404)
     user.delete()
     storage.save()
-    return jsonify({}), 200
+    return make_response(jsonify({}), 200)
 
 
 # Address Routes
@@ -128,10 +128,10 @@ def get_address(address_id):
 def create_address():
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     address = Addresses(**data)
     address.save()
-    return jsonify(address.to_dict()), 201
+    return make_response(jsonify(address.to_dict()), 201)
 
 
 @app.route('/addresses/<address_id>', methods=['PUT'])
@@ -141,7 +141,7 @@ def update_address(address_id):
         return not_found(404)
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     for key, value in data.items():
         setattr(address, key, value)
     address.save()
@@ -155,7 +155,7 @@ def delete_address(address_id):
         return not_found(404)
     address.delete()
     storage.save()
-    return jsonify({}), 200
+    return make_response(jsonify({}), 200)
 
 
 # Order Routes
@@ -177,10 +177,10 @@ def get_order(order_id):
 def create_order():
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': "Not a JSON"}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     order = Orders(**data)
     order.save()
-    return jsonify(order.to_dict()), 201
+    return make_response(jsonify(order.to_dict()), 201)
 
 
 @app.route('/orders/<order_id>', methods=['PUT'])
@@ -226,10 +226,10 @@ def get_doctor(doctor_id):
 def create_doctor():
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     doctor = Doctors(**data)
     doctor.save()
-    return jsonify(doctor.to_dict()), 201
+    return make_response(jsonify(doctor.to_dict()), 201)
 
 
 @app.route('/doctors/<doctor_id>', methods=['PUT'])
@@ -239,7 +239,7 @@ def update_doctor(doctor_id):
         return not_found(404)
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
     for key, value in data.items():
         setattr(doctor, key, value)
     doctor.save()
@@ -253,7 +253,7 @@ def delete_doctor(doctor_id):
         return not_found(404)
     doctor.delete()
     storage.save()
-    return jsonify({}), 200
+    return make_response(jsonify({}), 200)
 
 
 # Comment Routes
@@ -278,7 +278,7 @@ def create_comment():
         return make_response(jsonify({'error': "Not a JSON"}), 400)
     comment = Comments(**data)
     comment.save()
-    return jsonify(comment.to_dict()), 201
+    return make_response(jsonify(comment.to_dict()), 201)
 
 
 @app.route('/comments/<comment_id>', methods=['PUT'])
@@ -327,7 +327,7 @@ def create_category():
         return make_response(jsonify({'error': "Not a JSON"}), 400)
     category = Categories(**data)
     category.save()
-    return jsonify(category.to_dict()), 201
+    return make_response(jsonify(category.to_dict()), 201)
 
 
 @app.route('/categories/<category_id>', methods=['PUT'])
@@ -497,18 +497,24 @@ def delete_product(product_id):
 
 
 # Product Tags Routes
+# @app.route('/product_tags', methods=['GET'])
+# def get_product_tags():
+#     """Retrieve all product tags"""
+#     product_tags = storage.all(Product_Tags).values()
+#     product_tags_list = []
+#     for tag in product_tags:
+#         product_tags_list.append({
+#             'product_id': tag.product_id,
+#             'tag_id': tag.tag_id,
+#             'created_at': tag.created_at,
+#             'updated_at': tag.updated_at
+#         })
+#     return jsonify(product_tags_list)
 @app.route('/product_tags', methods=['GET'])
 def get_product_tags():
     """Retrieve all product tags"""
     product_tags = storage.all(Product_Tags).values()
-    product_tags_list = []
-    for tag in product_tags:
-        product_tags_list.append({
-            'product_id': tag.product_id,
-            'tag_id': tag.tag_id,
-            'created_at': tag.created_at,
-            'updated_at': tag.updated_at
-        })
+    product_tags_list = [tag.to_dict() for tag in product_tags]
     return jsonify(product_tags_list)
 
 
