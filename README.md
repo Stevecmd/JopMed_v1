@@ -31,6 +31,17 @@ This project is interpreted/tested on Ubuntu 14.04 LTS using python3 (version 3.
 * If it doesnt work use an explicit path for example: `python /media/stevecmd/48444E06444DF6EA/ALX/JopMed_v1/console.py`
 * Run jopmed(non-interactively): `echo "<command>" | ./console.py`
 
+## RESTful API
+The project relies on a `RESTful - Flask API`. <br />
+Below is a breakdown of the key aspects:
+1. Flask Application: The code starts by importing necessary modules and creating a Flask application instance.
+2. CORS Configuration: The CORS (Cross-Origin Resource Sharing) module is used to allow cross-origin requests to the API.
+3. Error Handling: The code defines a custom 404 error handler to return a JSON response for not found resources.
+4. Swagger Documentation: The Flasgger library is used to generate Swagger documentation for the API.
+5. Routes and Endpoints: The API defines several routes and endpoints for managing users, addresses, orders, doctors, comments, and other entities. These endpoints support HTTP methods like GET, POST, PUT, and DELETE.
+6. Database Storage: The code interacts with a storage engine (likely an ORM like SQLAlchemy) to perform CRUD (Create, Read, Update, Delete) operations on the database models.
+7. Response Handling: The API returns JSON responses for successful operations and provides appropriate error responses for failed requests.
+
 ## File Descriptions
 [console.py](console.py) - the console contains the entry point of the command interpreter. 
 List of commands this console current supports:
@@ -48,7 +59,8 @@ List of commands this console current supports:
 * `def __init__(self, *args, **kwargs)` - Initialization of the base model
 * `def __str__(self)` - String representation of the BaseModel class
 * `def save(self)` - Updates the attribute `updated_at` with the current datetime
-* `def to_dict(self)` - returns a dictionary containing all keys/values of the instance
+* `def to_dict(self)` - Returns a dictionary containing all keys/values of the instance
+* `def delete(self)` - Deletes the current instance from the storage
 
 Classes inherited from Base Model:
 * [addresses.py](/models/addresses.py)
