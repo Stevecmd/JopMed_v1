@@ -8,6 +8,8 @@ from models.orders import Orders
 from models.doctors import Doctors
 from models.comments import Comments
 from models.categories import Categories
+from models.order_items import Order_Items
+from models.payments import Payments
 from models.product_categories import Product_Categories
 from models.prescriptions import Prescriptions
 from models.products import Products
@@ -267,12 +269,57 @@ def update_order(order_id):
 
 @app.route('/orders/<order_id>', methods=['DELETE'])
 def delete_order(order_id):
-    order = storage.get(Orders, order_id)
-    if not order:
-        return make_response(jsonify({'error': "Not found"}), 404)
-    order.delete()
-    storage.save()
-    return jsonify({}), 200
+    try:
+        logging.info(f"Attempting to delete order with ID: {order_id}")
+        
+        order = storage.get(Orders, order_id)
+        if not order:
+            logging.warning(f"Order with ID {order_id} not found")
+            return not_found(404)
+
+        # Fetch and delete related payments
+        payments = storage.all(Payments).values()
+        related_payments = [payment for payment in payments if payment.order_id == order_id]
+        for payment in related_payments:
+            payment.delete()
+        
+        # Fetch and delete related order items
+        order_items = storage.all(Order_Items).values()
+        related_order_items = [item for item in order_items if item.order_id == order_id]
+        for item in related_order_items:
+            item.delete()
+        
+        storage.save()
+
+        # Now delete the order
+        order_details = order.to_dict()
+        order.delete()
+        storage.save()
+        
+        logging.info(f"Order with ID {order_id} deleted successfully")
+        return make_response(jsonify(order_details), 200)
+    except ValueError as ve:
+        logging.error(f"ValueError while deleting order with ID {order_id}: {ve}")
+        return not_found(404)
+    except Exception as e:
+        logging.error(f"Exception while deleting order with ID {order_id}: {e}")
+        return make_response(jsonify({'error': 'Internal Server Error'}), 500)
+
+# Order Items Routes
+@app.route('/order_items', methods=['POST'])
+def create_order_item():
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({'error': 'No input data provided'}), 400)
+    
+    required_fields = ['order_id', 'product_id', 'quantity', 'price']
+    for field in required_fields:
+        if field not in data:
+            return make_response(jsonify({'error': f'Missing {field}'}), 400)
+    
+    order_item = Order_Items(**data)
+    order_item.save()
+    return make_response(jsonify(order_item.to_dict()), 201)
 
 
 # Doctor Routes

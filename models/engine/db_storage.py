@@ -107,9 +107,14 @@ class DBStorage:
         if cls not in classes.values():
             return None
 
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+
         all_cls = models.storage.all(cls)
         for value in all_cls.values():
-            if (value.id == id):
+            if value.id == id:
                 return value
 
         return None
