@@ -22,18 +22,18 @@ from flask import Flask, request, render_template, make_response, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
 from flasgger.utils import swag_from
+import logging
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
-
+logging.basicConfig(level=logging.INFO)
 
 @app.teardown_appcontext
 def close_db(error):
     """ Close Storage """
     storage.close()
-
 
 @app.errorhandler(404)
 def not_found(error):
@@ -45,6 +45,10 @@ def not_found(error):
     """
     return make_response(jsonify({'error': "Not found"}), 404)
 
+@app.route('/api/v1/status', methods=['GET'])
+def status():
+    """ Status of the API """
+    return jsonify({"status": "OK"})
 
 app.config['SWAGGER'] = {
     'title': 'JOPMED Restful API',
@@ -52,7 +56,6 @@ app.config['SWAGGER'] = {
 }
 
 Swagger(app)
-
 
 @app.route('/', strict_slashes=False)
 @app.route('/jopmed-home', strict_slashes=False)
@@ -67,11 +70,26 @@ def get_users():
     return jsonify([user.to_dict() for user in users])
 
 
+# @app.route('/users/<user_id>', methods=['GET'])
+# def get_user(user_id):
+#     user = storage.get(User, user_id)
+#     if not user:
+#         return not_found(404)
+#     return jsonify(user.to_dict())
 @app.route('/users/<user_id>', methods=['GET'])
 def get_user(user_id):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        logging.error(f"Invalid user ID: {user_id}")
+        return not_found(404)
+
+    logging.info(f"Fetching user with ID: {user_id}")
     user = storage.get(User, user_id)
     if not user:
+        logging.error(f"User with ID {user_id} not found")
         return not_found(404)
+    logging.info(f"User found: {user.to_dict()}")
     return jsonify(user.to_dict())
 
 
@@ -101,12 +119,23 @@ def update_user(user_id):
 
 @app.route('/users/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        logging.error(f"Invalid user ID: {user_id}")
+        return not_found(404)
+
+    logging.info(f"Deleting user with ID: {user_id}")
     user = storage.get(User, user_id)
     if not user:
+        logging.error(f"User with ID {user_id} not found")
         return not_found(404)
+
+    user_details = user.to_dict()
     user.delete()
     storage.save()
-    return make_response(jsonify({}), 200)
+    logging.info(f"User with ID {user_id} deleted")
+    return make_response(jsonify(user_details), 200)
 
 
 # Address Routes
@@ -118,9 +147,19 @@ def get_addresses():
 
 @app.route('/addresses/<address_id>', methods=['GET'])
 def get_address(address_id):
+    try:
+        address_id = int(address_id)
+    except ValueError:
+        logging.error(f"Invalid address ID: {address_id}")
+        return not_found(404)
+
+    logging.info(f"Fetching address with ID: {address_id}")
     address = storage.get(Addresses, address_id)
     if not address:
+        logging.error(f"Address with ID {address_id} not found")
         return not_found(404)
+
+    logging.info(f"Address found: {address.to_dict()}")
     return jsonify(address.to_dict())
 
 
@@ -136,12 +175,21 @@ def create_address():
 
 @app.route('/addresses/<address_id>', methods=['PUT'])
 def update_address(address_id):
+    try:
+        address_id = int(address_id)
+    except ValueError:
+        logging.error(f"Invalid address ID: {address_id}")
+        return not_found(404)
+
     address = storage.get(Addresses, address_id)
     if not address:
+        logging.error(f"Address with ID {address_id} not found")
         return not_found(404)
+
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'No input data provided'}), 400)
+
     for key, value in data.items():
         setattr(address, key, value)
     address.save()
@@ -150,12 +198,29 @@ def update_address(address_id):
 
 @app.route('/addresses/<address_id>', methods=['DELETE'])
 def delete_address(address_id):
+    try:
+        address_id = int(address_id)
+    except ValueError:
+        return not_found(404)
+
+    logging.info(f"Deleting address with ID: {address_id}")
     address = storage.get(Addresses, address_id)
     if not address:
         return not_found(404)
+
+    # Handle associated shipping_information records
+    shipping_info_records = storage.all(Shipping_Information).values()
+    for record in shipping_info_records:
+        if record.address_id == address_id:
+            record.delete()
+
+    storage.save()
+
+    address_details = address.to_dict()
     address.delete()
     storage.save()
-    return make_response(jsonify({}), 200)
+    logging.info(f"Address with ID {address_id} deleted")
+    return make_response(jsonify(address_details), 200)
 
 
 # Order Routes
@@ -167,9 +232,12 @@ def get_orders():
 
 @app.route('/orders/<order_id>', methods=['GET'])
 def get_order(order_id):
+    logging.info(f"Fetching order with ID {order_id}")
     order = storage.get(Orders, order_id)
     if not order:
+        logging.error(f"Order with ID {order_id} not found")
         return make_response(jsonify({'error': "Not found"}), 404)
+    logging.info(f"Order with ID {order_id} found: {order.to_dict()}")
     return jsonify(order.to_dict())
 
 

@@ -5,7 +5,7 @@ import models
 from models.base_model import BaseModel, Base
 from os import getenv
 import sqlalchemy
-from sqlalchemy import Column, String, DateTime, Table, ForeignKey
+from sqlalchemy import Column, String, DateTime, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 import bcrypt
 from datetime import datetime
@@ -15,6 +15,7 @@ class User(BaseModel, Base):
     """Representation of a user """
     if models.storage_t == 'db':
         __tablename__ = 'users'
+        id = Column(Integer, primary_key=True, autoincrement=True)
         username = Column(String(64), nullable=False, unique=True)
         email = Column(String(120), nullable=False, unique=True)
         password = Column(String(128), nullable=False)

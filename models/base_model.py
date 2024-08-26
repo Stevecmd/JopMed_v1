@@ -11,7 +11,6 @@ from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base, as_declarative, declared_attr
-import uuid
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -46,10 +45,7 @@ class BaseModel:
                 self.updated_at = datetime.strptime(kwargs["updated_at"], time)
             else:
                 self.updated_at = datetime.now(timezone.utc)
-            if kwargs.get("id", None) is None:
-                self.id = str(uuid.uuid4())  # Generate a unique id
         else:
-            self.id = str(uuid.uuid4())  # Generate a unique id
             self.created_at = datetime.now(timezone.utc)
             self.updated_at = self.created_at
 
