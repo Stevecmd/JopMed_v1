@@ -384,6 +384,464 @@ curl -X POST http://localhost:5000/order_items -H "Content-Type: application/jso
 
 ```
 
+Get a list of doctors:
+```sh
+
+curl -X GET http://127.0.0.1:5000/doctors
+[
+  {
+    "__class__": "Doctors",
+    "created_at": "2024-08-26T12:36:20.000000",
+    "first_name": "John",
+    "id": 1,
+    "last_name": "Smith",
+    "phone_number": "123-456-7890",
+    "specialization": "Cardiology",
+    "updated_at": "2024-08-26T12:36:20.000000"
+  },
+  {
+    "__class__": "Doctors",
+    "created_at": "2024-08-26T12:36:20.000000",
+    "first_name": "Jane",
+    "id": 2,
+    "last_name": "Doe",
+    "phone_number": "098-765-4321",
+    "specialization": "Neurology",
+    "updated_at": "2024-08-26T12:36:20.000000"
+  }
+]
+
+```
+Get doctors by ID:
+```sh
+
+curl -X GET http://127.0.0.1:5000/doctors/1
+{
+  "__class__": "Doctors",
+  "created_at": "2024-08-26T12:36:20.000000",
+  "first_name": "John",
+  "id": 1,
+  "last_name": "Smith",
+  "phone_number": "123-456-7890",
+  "specialization": "Cardiology",
+  "updated_at": "2024-08-26T12:36:20.000000"
+}
+
+```
+Add a new doctor:
+```sh
+
+curl -X POST http://127.0.0.1:5000/doctors -H "Content-Type: application/json" -d '{
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "specialization": "Neurology",
+  "phone_number": "987-654-3210",
+  "email": "jane.doe1@example.com",
+  "created_at": "2024-08-26T12:36:20.000000",
+  "updated_at": "2024-08-26T12:36:20.000000"
+}'
+{
+  "__class__": "Doctors",
+  "created_at": "2024-08-26T12:36:20.000000",
+  "email": "jane.doe1@example.com",
+  "first_name": "Jane",
+  "id": 5,
+  "last_name": "Doe",
+  "phone_number": "987-654-3210",
+  "specialization": "Neurology",
+  "updated_at": "2024-08-27T04:45:52.298382"
+}
+
+```
+Adding doctors must use unique email:
+```sh
+
+curl -X POST http://127.0.0.1:5000/doctors -H "Content-Type: application/json" -d '{
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "specialization": "Neurology",
+  "phone_number": "987-654-3210",
+  "email": "jane.doe1@example.com",
+  "created_at": "2024-08-26T12:36:20.000000",
+  "updated_at": "2024-08-26T12:36:20.000000"
+}'
+{
+  "error": "Email already exists"
+}
+
+```
+
+Updating a doctor via ID:
+```sh
+
+curl -X PUT http://127.0.0.1:5000/doctors/1 \
+-H "Content-Type: application/json" \
+-d '{
+  "first_name": "Jonathan",
+  "specialization": "Neurology"
+}'
+{
+  "__class__": "Doctors",
+  "created_at": "2024-08-26T12:36:20.000000",
+  "email": "john.smith@example.com",
+  "first_name": "Jonathan",
+  "id": 1,
+  "last_name": "Smith",
+  "phone_number": "123-456-7890",
+  "specialization": "Neurology",
+  "updated_at": "2024-08-27T04:54:04.052726"
+}
+
+```
+Delete a doctor via the ID:
+```sh
+
+curl -X DELETE http://127.0.0.1:5000/doctors/5
+
+```
+
+Get comments:
+```sh
+
+curl -X GET http://127.0.0.1:5000/comments
+[
+  {
+    "__class__": "Comments",
+    "content": "Great product, very effective!",
+    "created_at": "2024-08-26T12:36:17.000000",
+    "id": 1,
+    "product_id": 1,
+    "updated_at": "2024-08-26T12:36:17.000000",
+    "user_id": 1
+  },
+  {
+    "__class__": "Comments",
+    "content": "Not satisfied with the quality.",
+    "created_at": "2024-08-26T12:36:17.000000",
+    "id": 2,
+    "product_id": 2,
+    "updated_at": "2024-08-26T12:36:17.000000",
+    "user_id": 2
+  }
+]
+
+```
+Get comments by ID:
+```sh
+
+curl -X GET http://127.0.0.1:5000/comments/1
+{
+  "__class__": "Comments",
+  "content": "Great product, very effective!",
+  "created_at": "2024-08-26T12:36:17.000000",
+  "id": 1,
+  "product_id": 1,
+  "updated_at": "2024-08-26T12:36:17.000000",
+  "user_id": 1
+}
+
+```
+Update a comment via ID:
+```sh
+
+curl -X PUT http://127.0.0.1:5000/comments/2 -H "Content-Type: application/json" -d '{"content": "Updated comment content"}'
+{
+  "__class__": "Comments",
+  "content": "Updated comment content",
+  "created_at": "2024-08-26T12:36:17.000000",
+  "id": 2,
+  "product_id": 2,
+  "updated_at": "2024-08-27T05:08:56.137970",
+  "user_id": 2
+}
+
+```
+Delete a comment using its ID:
+```sh
+curl -X DELETE http://127.0.0.1:5000/comments/2
+```
+
+Get categories:
+```sh
+
+curl -X GET http://127.0.0.1:5000/categories
+[
+  {
+    "__class__": "Categories",
+    "created_at": "2024-08-26T12:36:01.000000",
+    "description": "Various types of medicines",
+    "id": 1,
+    "name": "Medicines",
+    "slug": "medicines",
+    "updated_at": "2024-08-26T12:36:01.000000"
+  },
+  {
+    "__class__": "Categories",
+    "created_at": "2024-08-26T12:36:01.000000",
+    "description": "Health supplements and vitamins",
+    "id": 2,
+    "name": "Supplements",
+    "slug": "supplements",
+    "updated_at": "2024-08-26T12:36:01.000000"
+  }
+]
+
+```
+
+Get categories by ID:
+```sh
+curl -X GET http://127.0.0.1:5000/categories/1
+{
+  "__class__": "Categories",
+  "created_at": "2024-08-26T12:36:01.000000",
+  "description": "Various types of medicines",
+  "id": 1,
+  "name": "Medicines",
+  "slug": "medicines",
+  "updated_at": "2024-08-26T12:36:01.000000"
+}
+
+```
+Add a new category:
+```sh
+
+curl -X POST http://127.0.0.1:5000/categories -H "Content-Type: application/json" -d '{"name": "Disinfectants", "de
+scription": "Disinfectants info", "slug": "disinfectants"}'
+{
+  "__class__": "Categories",
+  "created_at": "2024-08-27T05:17:16.655630",
+  "description": "Disinfectants info",
+  "id": 3,
+  "name": "Disinfectants",
+  "slug": "disinfectants",
+  "updated_at": "2024-08-27T05:17:16.655647"
+}
+
+```
+Update a category by ID:
+```sh
+
+curl -X PUT h
+ttp://127.0.0.1:5000/categories/3 -H "Content-Type: application/json" -d '{"name": "New-Disinfectants"
+, "description": "New-Disinfectants info"}'
+{
+  "__class__": "Categories",
+  "created_at": "2024-08-27T05:17:17.000000",
+  "description": "New-Disinfectants info",
+  "id": 3,
+  "name": "New-Disinfectants",
+  "slug": "disinfectants",
+  "updated_at": "2024-08-27T05:19:33.280803"
+}
+
+```
+
+Delete a category by ID:
+```sh
+
+curl -X DELETE http://127.0.0.1:5000/categories/3
+{
+  "success": "Category deleted"
+}
+
+```
+
+Get all product categories:
+```sh
+
+curl -X GET h
+ttp://127.0.0.1:5000/product_categories
+[
+  {
+    "__class__": "Product_Categories",
+    "category_id": 1,
+    "created_at": "2024-08-26T12:36:02.000000",
+    "id": 1,
+    "product_id": 1,
+    "updated_at": "2024-08-26T12:36:02.000000"
+  },
+  {
+    "__class__": "Product_Categories",
+    "category_id": 2,
+    "created_at": "2024-08-26T12:36:02.000000",
+    "id": 2,
+    "product_id": 2,
+    "updated_at": "2024-08-26T12:36:02.000000"
+  }
+]
+
+```
+
+Get product categories by ID:
+```sh
+
+curl -X GET http://127.0.0.1:5000/product_categories/1
+[
+  {
+    "__class__": "Product_Categories",
+    "category_id": 1,
+    "created_at": "2024-08-26T12:36:02.000000",
+    "id": 1,
+    "product_id": 1,
+    "updated_at": "2024-08-26T12:36:02.000000"
+  }
+]
+
+```
+Get product_categories via ID:
+```sh
+
+curl -X POST http://127.0.0.1:5000/product_categories      -H "Content-Type: application/json"      -d '{
+           "product_id": 2,
+           "category_id": 2
+         }'
+{
+  "__class__": "Product_Categories",
+  "category_id": 2,
+  "created_at": "2024-08-27T05:45:26.592499",
+  "id": 5,
+  "product_id": 2,
+  "updated_at": "2024-08-27T05:45:26.592513"
+}
+
+```
+
+Get a list of prescriptions:
+```sh
+
+curl -X GET http://127.0.0.1:5000/prescriptions
+[
+  {
+    "__class__": "Prescriptions",
+    "created_at": "2024-08-27T09:40:44.000000",
+    "doctor_id": 1,
+    "dosage": "Dosage A",
+    "expiration_date": "Wed, 27 Aug 2025 06:40:44 GMT",
+    "id": 1,
+    "instructions": "Instructions A",
+    "medication": "Medication A",
+    "prescription_date": "Tue, 27 Aug 2024 06:40:44 GMT",
+    "updated_at": "2024-08-27T09:40:44.000000",
+    "user_id": 1
+  },
+  {
+    "__class__": "Prescriptions",
+    "created_at": "2024-08-27T09:40:44.000000",
+    "doctor_id": 2,
+    "dosage": "Dosage B",
+    "expiration_date": "Wed, 27 Aug 2025 06:40:44 GMT",
+    "id": 2,
+    "instructions": "Instructions B",
+    "medication": "Medication B",
+    "prescription_date": "Tue, 27 Aug 2024 06:40:44 GMT",
+    "updated_at": "2024-08-27T09:40:44.000000",
+    "user_id": 2
+  }
+]
+
+```
+Get a prescription by ID:
+```sh
+
+curl -X GET http://127.0.0.1:5000/prescriptions/1
+{
+  "__class__": "Prescriptions",
+  "created_at": "2024-08-27T09:40:44.000000",
+  "doctor_id": 1,
+  "dosage": "Dosage A",
+  "expiration_date": "Wed, 27 Aug 2025 06:40:44 GMT",
+  "id": 1,
+  "instructions": "Instructions A",
+  "medication": "Medication A",
+  "prescription_date": "Tue, 27 Aug 2024 06:40:44 GMT",
+  "updated_at": "2024-08-27T09:40:44.000000",
+  "user_id": 1
+}
+
+```
+Get products images:
+```sh
+
+curl -X GET http://127.0.0.1:5000/product_images
+[
+  {
+    "__class__": "Product_Images",
+    "created_at": "2024-08-27T06:40:21.000000",
+    "id": 1,
+    "image_url": "http://example.com/images/paracetamol.jpg",
+    "product_id": 1,
+    "updated_at": "2024-08-27T06:40:21.000000"
+  },
+  {
+    "__class__": "Product_Images",
+    "created_at": "2024-08-27T06:40:21.000000",
+    "id": 2,
+    "image_url": "http://example.com/images/vitamin-c.jpg",
+    "product_id": 2,
+    "updated_at": "2024-08-27T06:40:21.000000"
+  }
+]
+
+```
+Get product images by ID:
+```sh
+
+curl -X GET http://127.0.0.1:5000/product_images/1
+[
+  {
+    "__class__": "Product_Images",
+    "created_at": "2024-08-27T06:40:21.000000",
+    "id": 1,
+    "image_url": "http://example.com/images/paracetamol.jpg",
+    "product_id": 1,
+    "updated_at": "2024-08-27T06:40:21.000000"
+  }
+]
+
+```
+
+Get Shipping methods:
+```sh
+
+curl -X GET http://127.0.0.1:5000/shipping_methods
+[
+  {
+    "__class__": "Shipping_Methods",
+    "created_at": "2024-08-27T06:40:13.000000",
+    "description": "Delivery within 5-7 business days",
+    "id": 1,
+    "name": "Standard Shipping",
+    "updated_at": "2024-08-27T06:40:13.000000"
+  },
+  {
+    "__class__": "Shipping_Methods",
+    "created_at": "2024-08-27T06:40:13.000000",
+    "description": "Delivery within 1-2 business days",
+    "id": 2,
+    "name": "Express Shipping",
+    "updated_at": "2024-08-27T06:40:13.000000"
+  }
+]
+
+```
+Get shipping methods by ID:
+```sh
+
+curl -X GET http://127.0.0.1:5000/shipping_methods/1
+{
+  "__class__": "Shipping_Methods",
+  "created_at": "2024-08-27T06:40:13.000000",
+  "description": "Delivery within 5-7 business days",
+  "id": 1,
+  "name": "Standard Shipping",
+  "updated_at": "2024-08-27T06:40:13.000000"
+}
+
+```
+
+
+
+
 - Not found
 `curl -X GET http://0.0.0.0:5000/api/v1/nop`
 `curl -X GET http://0.0.0.0:5000/api/v1/nop -vvv`
