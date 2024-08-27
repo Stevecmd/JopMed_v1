@@ -457,17 +457,22 @@ CREATE TABLE prescriptions (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
     doctor_id INT NOT NULL,
+    medication VARCHAR(255) NOT NULL,
+    dosage VARCHAR(255) NOT NULL,
+    instructions TEXT NOT NULL,
     prescription_date DATETIME NOT NULL,
     expiration_date DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (doctor_id) REFERENCES doctors(id)
 );
 
 -- Insert sample data into prescriptions table
-INSERT INTO prescriptions (user_id, doctor_id, prescription_date, expiration_date) VALUES
-(1, 1, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR)),
-(2, 2, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR));
+INSERT INTO prescriptions (user_id, doctor_id, medication, dosage, instructions, prescription_date, expiration_date) VALUES
+(1, 1, 'Medication A', 'Dosage A', 'Instructions A', NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR)),
+(2, 2, 'Medication B', 'Dosage B', 'Instructions B', NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR));
 
 -- Doctors Table
 DROP TABLE IF EXISTS doctors;
