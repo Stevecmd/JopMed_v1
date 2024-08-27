@@ -342,6 +342,17 @@ def create_doctor():
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'No input data provided'}), 400)
+    
+    required_fields = ['first_name', 'last_name', 'specialization', 'phone_number', 'email']
+    for field in required_fields:
+        if field not in data:
+            return make_response(jsonify({'error': f'Missing {field}'}), 400)
+    
+    # Check if email already exists
+    existing_doctor = storage.get_by_email(Doctors, data['email'])
+    if existing_doctor:
+        return make_response(jsonify({'error': 'Email already exists'}), 400)
+    
     doctor = Doctors(**data)
     doctor.save()
     return make_response(jsonify(doctor.to_dict()), 201)

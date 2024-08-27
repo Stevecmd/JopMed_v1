@@ -133,3 +133,7 @@ class DBStorage:
             count = len(models.storage.all(cls).values())
 
         return count
+
+    def get_by_email(self, cls, email):
+        """Retrieve an object by email"""
+        return self.__session.query(cls).filter_by(email=email).first()

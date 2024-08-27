@@ -17,6 +17,7 @@ class Doctors(BaseModel, Base):
         last_name = Column(String(255), nullable=False)
         specialization = Column(String(255), nullable=False)
         phone_number = Column(String(255), nullable=False, unique=True)
+        email = Column(String(255), nullable=False, unique=True)
         created_at = Column(DateTime, nullable=False)
         updated_at = Column(DateTime, nullable=False)
     else:
