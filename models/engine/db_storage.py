@@ -107,15 +107,22 @@ class DBStorage:
         if cls not in classes.values():
             return None
 
-        try:
-            id = int(id)
-        except ValueError:
-            return None
+        if isinstance(id, tuple):
+            # Handle composite keys
+            query = self.__session.query(cls)
+            for key, value in zip(cls.__table__.primary_key.columns.keys(), id):
+                query = query.filter(getattr(cls, key) == value)
+            return query.first()
+        else:
+            try:
+                id = int(id)
+            except ValueError:
+                return None
 
-        all_cls = models.storage.all(cls)
-        for value in all_cls.values():
-            if value.id == id:
-                return value
+            all_cls = models.storage.all(cls)
+            for value in all_cls.values():
+                if value.id == id:
+                    return value
 
         return None
 

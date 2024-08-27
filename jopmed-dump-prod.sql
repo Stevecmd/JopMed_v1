@@ -434,6 +434,7 @@ CREATE TABLE file_uploads (
     original_name VARCHAR(255) NOT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    upload_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     tag_id INT,
     product_id INT,
     category_id INT,
@@ -445,9 +446,9 @@ CREATE TABLE file_uploads (
 );
 
 -- Insert sample data into file_uploads table
-INSERT INTO file_uploads (user_id, type, file_path, file_name, file_size, original_name, created_at, updated_at, tag_id, product_id, category_id) VALUES
-(1, 'image', '/uploads/images/paracetamol.jpg', 'paracetamol.jpg', 1024, 'paracetamol.jpg', NOW(), NOW(), 1, 1, 1),
-(2, 'image', '/uploads/images/vitamin-c.jpg', 'vitamin-c.jpg', 2048, 'vitamin-c.jpg', NOW(), NOW(), 2, 2, 2);
+INSERT INTO file_uploads (user_id, type, file_path, file_name, file_size, original_name, created_at, updated_at, upload_date, tag_id, product_id, category_id) VALUES
+(1, 'image', '/uploads/images/paracetamol.jpg', 'paracetamol.jpg', 1024, 'paracetamol.jpg', NOW(), NOW(), NOW(), 1, 1, 1),
+(2, 'image', '/uploads/images/vitamin-c.jpg', 'vitamin-c.jpg', 2048, 'vitamin-c.jpg', NOW(), NOW(), NOW(), 2, 2, 2);
 
 -- Prescription Table
 DROP TABLE IF EXISTS prescriptions;

@@ -533,10 +533,12 @@ def create_product_category():
 def delete_product_category(product_id, category_id):
     pc = storage.get(Product_Categories, (product_id, category_id))
     if not pc:
-        return make_response(jsonify({'error': 'Not found'}), 404)
-    pc.delete()
+        return not_found(404)
+    deleted_content = pc.to_dict()
+    storage.delete(pc)
     storage.save()
-    return make_response(jsonify({}), 200)
+    print(deleted_content)
+    return jsonify({}), 200
 
 
 # Prescriptions Routes!
