@@ -15,9 +15,11 @@ from models.order_items import Order_Items
 from models.orders import Orders
 from models.payment_information import Payment_Information
 from models.payments import Payments
+from models.prescriptions import Prescriptions
 from models.product_categories import Product_Categories
 from models.products_tags import Product_Tags
 from models.products import Products
+from models.product_images import Product_Images
 from models.reviews import Reviews
 from models.roles import Roles
 from models.shipping_information import Shipping_Information
@@ -35,9 +37,9 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Doctors": Doctors, "File_Uploads": File_Uploads,
            "Inventory": Inventory, "Order_Items": Order_Items,
            "Orders": Orders, "Payment_Information": Payment_Information,
-           "Payments": Payments, "Product_categories": Product_Categories,
+           "Payments": Payments, "Prescriptions": Prescriptions, "Product_categories": Product_Categories,
            "Product_Tags": Product_Tags, "Product": Product_Tags,
-           "Products": Products, "Products": Products,
+           "Products": Products, "Products": Products, "Product_Images": Product_Images,
            "Reviews": Reviews,
            "Roles": Roles, "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,

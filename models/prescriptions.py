@@ -19,6 +19,8 @@ class Prescriptions(BaseModel, Base):
         medication = Column(String(255), nullable=False)
         dosage = Column(String(255), nullable=False)
         instructions = Column(String(255), nullable=False)
+        prescription_date = Column(DateTime, nullable=False)
+        expiration_date = Column(DateTime, nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
@@ -28,9 +30,11 @@ class Prescriptions(BaseModel, Base):
         medication = ""
         dosage = ""
         instructions = ""
+        prescription_date = ""
+        expiration_date = ""
         created_at = ""
         updated_at = ""
 
     def __init__(self, *args, **kwargs):
-        """initializes addresses"""
+        """initializes prescriptions"""
         super().__init__(*args, **kwargs)

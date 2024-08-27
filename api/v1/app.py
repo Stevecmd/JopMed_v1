@@ -544,15 +544,17 @@ def delete_product_category(product_id, category_id):
 # Prescriptions Routes!
 @app.route('/prescriptions', methods=['GET'])
 def get_prescriptions():
+    """Retrieve all prescriptions"""
     prescriptions = storage.all(Prescriptions).values()
     return jsonify([prescription.to_dict() for prescription in prescriptions])
 
 
 @app.route('/prescriptions/<prescription_id>', methods=['GET'])
 def get_prescription(prescription_id):
+    """Retrieve a specific prescription by ID"""
     prescription = storage.get(Prescriptions, prescription_id)
     if not prescription:
-        return make_response(jsonify({'error': 'Not found'}), 404)
+        return make_response(jsonify({'error': "Not found"}), 404)
     return jsonify(prescription.to_dict())
 
 
@@ -561,28 +563,51 @@ def create_prescription():
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
-    if (
-        'user_id' not in data or
-        'doctor_id' not in data or
-        'medication' not in data
-    ):
-        return make_response(
-            jsonify({
-                'error': 'Missing user_id, doctor_id or medication'
-                }), 400)
-    new_prescription = Prescriptions(**data)
-    new_prescription.save()
-    return make_response(jsonify(new_prescription.to_dict()), 201)
+    required_fields = ['user_id', 'doctor_id', 'medication', 'dosage', 'instructions']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return make_response(jsonify({'error': f"Missing fields: {', '.join(missing_fields)}"}), 400)
+    
+    prescription = Prescriptions(**data)
+    storage.new(prescription)
+    storage.save()
+    return make_response(jsonify(prescription.to_dict()), 201)
 
 
 @app.route('/prescriptions/<prescription_id>', methods=['DELETE'])
 def delete_prescription(prescription_id):
     prescription = storage.get(Prescriptions, prescription_id)
     if not prescription:
-        return make_response(jsonify({'error': 'Not found'}), 404)
+        return not_found(404)
+    deleted_content = prescription.to_dict()
     prescription.delete()
     storage.save()
-    return make_response(jsonify({}), 200)
+    return jsonify(deleted_content), 200
+
+
+@app.route('/prescriptions/<prescription_id>', methods=['PUT'])
+def update_prescription(prescription_id):
+    """Update a prescription by ID"""
+    logging.debug(f"Attempting to update prescription with ID: {prescription_id}")
+    
+    prescription = storage.get(Prescriptions, prescription_id)
+    if not prescription:
+        logging.error(f"Prescription with ID {prescription_id} not found")
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    
+    data = request.get_json()
+    if not data:
+        logging.error("Request data is not a valid JSON")
+        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+    
+    # Update the prescription fields
+    for key, value in data.items():
+        if key in ['user_id', 'doctor_id', 'medication', 'dosage', 'instructions', 'prescription_date', 'expiration_date']:
+            setattr(prescription, key, value)
+    
+    prescription.save()
+    logging.debug(f"Prescription with ID {prescription_id} updated successfully")
+    return jsonify(prescription.to_dict())
 
 
 # Products Routes
@@ -640,19 +665,6 @@ def delete_product(product_id):
 
 
 # Product Tags Routes
-# @app.route('/product_tags', methods=['GET'])
-# def get_product_tags():
-#     """Retrieve all product tags"""
-#     product_tags = storage.all(Product_Tags).values()
-#     product_tags_list = []
-#     for tag in product_tags:
-#         product_tags_list.append({
-#             'product_id': tag.product_id,
-#             'tag_id': tag.tag_id,
-#             'created_at': tag.created_at,
-#             'updated_at': tag.updated_at
-#         })
-#     return jsonify(product_tags_list)
 @app.route('/product_tags', methods=['GET'])
 def get_product_tags():
     """Retrieve all product tags"""
@@ -694,41 +706,64 @@ def delete_product_tag(product_id, tag_id):
 # Product Images Routes
 @app.route('/product_images', methods=['GET'])
 def get_product_images():
+    logging.info("Fetching all product images")
     product_images = storage.all(Product_Images).values()
-    return jsonify([pi.to_dict() for pi in product_images])
+    if not product_images:
+        logging.info("No product images found")
+    response = jsonify([pi.to_dict() for pi in product_images])
+    logging.info(f"Response: {response.get_json()}")
+    return response
 
 
 @app.route('/product_images/<product_id>', methods=['GET'])
 def get_product_images_by_product(product_id):
-    product_images = storage.filter(Product_Images, product_id=product_id)
-    return jsonify([pi.to_dict() for pi in product_images])
+    logging.info(f"Fetching product images for product ID: {product_id}")
+    product_images = storage.all(Product_Images).values()
+    if not product_images:
+        logging.info("No product images found")
+    filtered_images = [pi.to_dict() for pi in product_images if pi.product_id == int(product_id)]
+    if not filtered_images:
+        logging.info(f"No product images found for product ID: {product_id}")
+    response = jsonify(filtered_images)
+    logging.info(f"Response: {response.get_json()}")
+    return response
 
 
 @app.route('/product_images', methods=['POST'])
 def create_product_image():
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+        response = make_response(jsonify({'error': 'Not a JSON'}), 400)
+        print(response.get_json())
+        return response
     if 'product_id' not in data or 'image_url' not in data:
-        return make_response(
+        response = make_response(
             jsonify({
                 'error': 'Missing product_id or image_url'
             }),
             400
         )
+        print(response.get_json())
+        return response
     new_pi = Product_Images(**data)
     new_pi.save()
-    return make_response(jsonify(new_pi.to_dict()), 201)
+    response = make_response(jsonify(new_pi.to_dict()), 201)
+    print(response.get_json())
+    return response
 
 
 @app.route('/product_images/<image_id>', methods=['DELETE'])
 def delete_product_image(image_id):
     pi = storage.get(Product_Images, image_id)
     if not pi:
-        return make_response(jsonify({'error': 'Not found'}), 404)
+        response = make_response(jsonify({'error': 'Not found'}), 404)
+        print(response.get_json())
+        return response
     pi.delete()
     storage.save()
-    return make_response(jsonify({}), 200)
+    response = make_response(jsonify({}), 200)
+    print(response.get_json())
+    return response
 
 
 # Shipping Methods Routes
