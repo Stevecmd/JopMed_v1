@@ -137,3 +137,16 @@ class DBStorage:
     def get_by_email(self, cls, email):
         """Retrieve an object by email"""
         return self.__session.query(cls).filter_by(email=email).first()
+
+    def filter(self, cls, **kwargs):
+        """
+        Filter objects by given criteria.
+        """
+        if cls not in classes.values():
+            return None
+
+        query = self.__session.query(cls)
+        for key, value in kwargs.items():
+            query = query.filter(getattr(cls, key) == value)
+        
+        return query.all()

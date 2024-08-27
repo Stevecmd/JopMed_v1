@@ -25,6 +25,7 @@ from flask_cors import CORS
 from flasgger import Swagger
 from flasgger.utils import swag_from
 import logging
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
@@ -472,12 +473,18 @@ def update_category(category_id):
 
 @app.route('/categories/<category_id>', methods=['DELETE'])
 def delete_category(category_id):
+    try:
+        category_id = int(category_id)
+    except ValueError:
+        return make_response(jsonify({'error': 'Invalid category ID'}), 400)
+
     category = storage.get(Categories, category_id)
     if not category:
-        return make_response(jsonify({'error': "Not found"}), 404)
+        return make_response(jsonify({'error': 'Category not found'}), 404)
+    
     category.delete()
     storage.save()
-    return make_response(jsonify({}), 200)
+    return make_response(jsonify({'success': 'Category deleted'}), 200)
 
 
 # Product Categories Routes
@@ -489,11 +496,16 @@ def get_product_categories():
 
 @app.route('/product_categories/<product_id>', methods=['GET'])
 def get_product_categories_by_product(product_id):
-    product_categories = storage.filter(
-        Product_Categories,
-        product_id=product_id
-    )
-    return jsonify([pc.to_dict() for pc in product_categories])
+    try:
+        product_id = int(product_id)
+    except ValueError:
+        return make_response(jsonify({'error': 'Invalid product ID'}), 400)
+
+    product_categories = storage.filter(Product_Categories, product_id=product_id)
+    if not product_categories:
+        return make_response(jsonify({'error': 'Product categories not found'}), 404)
+
+    return jsonify([category.to_dict() for category in product_categories])
 
 
 @app.route('/product_categories', methods=['POST'])
@@ -507,8 +519,11 @@ def create_product_category():
                 'error': 'Missing product_id or category_id'
                 }), 400)
     new_pc = Product_Categories(**data)
-    new_pc.save()
-    return make_response(jsonify(new_pc.to_dict()), 201)
+    try:
+        new_pc.save()
+    except IntegrityError:
+        return make_response(jsonify({'error': 'Invalid product_id or category_id'}), 400)
+    return jsonify(new_pc.to_dict()), 201
 
 
 @app.route(
