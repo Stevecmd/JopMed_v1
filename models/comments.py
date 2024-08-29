@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" holds class Place"""
+""" holds class Comments"""
 import models
 from models.base_model import BaseModel, Base
 from os import getenv
@@ -7,7 +7,6 @@ import sqlalchemy
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-
 
 class Comments(BaseModel, Base):
     """Representation of Comments """
@@ -22,7 +21,7 @@ class Comments(BaseModel, Base):
 
         # Define relationships
         product = relationship("Products", back_populates="comments")
-        user = relationship("User", back_populates="comments")
+        user = relationship("Users", back_populates="comments")
     else:
         product_id = ""
         user_id = ""
@@ -31,4 +30,3 @@ class Comments(BaseModel, Base):
     def __init__(self, *args, **kwargs):
         """initializes comment"""
         super().__init__(*args, **kwargs)
-
