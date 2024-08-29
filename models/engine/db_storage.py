@@ -6,7 +6,6 @@ Contains the class DBStorage
 import models
 from models.base_model import BaseModel, Base
 from models.addresses import Addresses
-from models.base_model import BaseModel
 from models.categories import Categories
 from models.comments import Comments
 from models.doctors import Doctors
@@ -16,33 +15,36 @@ from models.order_items import Order_Items
 from models.orders import Orders
 from models.payment_information import Payment_Information
 from models.payments import Payments
+from models.prescriptions import Prescriptions
 from models.product_categories import Product_Categories
 from models.products_tags import Product_Tags
 from models.products import Products
+from models.product_images import Product_Images
 from models.reviews import Reviews
 from models.roles import Roles
 from models.shipping_information import Shipping_Information
 from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
-from models.users_roles import User_Roles
+# from models.users_roles import User_Roles
 from models.users import User
 from os import getenv
-import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+
 
 classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Categories": Categories, "Comments": Comments,
            "Doctors": Doctors, "File_Uploads": File_Uploads,
            "Inventory": Inventory, "Order_Items": Order_Items,
            "Orders": Orders, "Payment_Information": Payment_Information,
-           "Payments": Payments, "Product_categories": Product_Categories,
-           "Product_Tags": Product_Tags, "Product": Product_Tags,
-           "Products": Products, "Products": Products,
-           "Reviews": Reviews,
-           "Roles": Roles, "Shipping_Information": Shipping_Information,
+           "Payments": Payments, "Prescriptions": Prescriptions,
+           "Product_Categories": Product_Categories,
+           "Product_Tags": Product_Tags, "Products": Products,
+           "Product_Images": Product_Images,
+           "Reviews": Reviews, "Roles": Roles,
+           "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
-           "User_Roles": User_Roles, "User": User }
+           "User": User}
 
 
 class DBStorage:
@@ -69,10 +71,12 @@ class DBStorage:
         """query on the current database session"""
         new_dict = {}
         for clss in classes:
+            if clss == "BaseModel":
+                continue
             if cls is None or cls is classes[clss] or cls is clss:
                 objs = self.__session.query(classes[clss]).all()
                 for obj in objs:
-                    key = obj.__class__.__name__ + '.' + obj.id
+                    key = obj.__class__.__name__ + '.' + str(obj.id)
                     new_dict[key] = obj
         return (new_dict)
 
@@ -108,10 +112,23 @@ class DBStorage:
         if cls not in classes.values():
             return None
 
-        all_cls = models.storage.all(cls)
-        for value in all_cls.values():
-            if (value.id == id):
-                return value
+        if isinstance(id, tuple):
+            # Handle composite keys
+            query = self.__session.query(cls)
+            primary_keys = cls.__table__.primary_key.columns.keys()
+            for key, value in zip(primary_keys, id):
+                query = query.filter(getattr(cls, key) == value)
+            return query.first()
+        else:
+            try:
+                id = int(id)
+            except ValueError:
+                return None
+
+            all_cls = models.storage.all(cls)
+            for value in all_cls.values():
+                if value.id == id:
+                    return value
 
         return None
 
@@ -129,3 +146,20 @@ class DBStorage:
             count = len(models.storage.all(cls).values())
 
         return count
+
+    def get_by_email(self, cls, email):
+        """Retrieve an object by email"""
+        return self.__session.query(cls).filter_by(email=email).first()
+
+    def filter(self, cls, **kwargs):
+        """
+        Filter objects by given criteria.
+        """
+        if cls not in classes.values():
+            return None
+
+        query = self.__session.query(cls)
+        for key, value in kwargs.items():
+            query = query.filter(getattr(cls, key) == value)
+
+        return query.all()

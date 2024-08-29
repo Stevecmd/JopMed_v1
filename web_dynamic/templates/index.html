@@ -2,86 +2,84 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="../static/styles/4-common.css">
-    <link rel="stylesheet" type="text/css" href="../static/styles/3-header.css">
-    <link rel="stylesheet" type="text/css" href="../static/styles/3-footer.css">
-    <link rel="stylesheet" type="text/css" href="../static/styles/6-filters.css">
-    <link type="text/css" rel="stylesheet" href="../static/styles/8-places.css">
-    <link rel="icon" href="../static/images/icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="../static/styles/common.css">
+    <link rel="stylesheet" type="text/css" href="../static/styles/header.css">
+    <link rel="stylesheet" type="text/css" href="../static/styles/footer.css">
+    <link rel="stylesheet" type="text/css" href="../static/styles/filters.css">
+    <link rel="stylesheet" href="../static/styles/reset.min.css" />
+    <link rel="stylesheet" href="../static/styles/style.css" />
+    <link rel="icon" href="../static/images/jopmed-logo.svg" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript" src="../static/scripts/jopmed.js"></script>
-    <title>HBnB</title>
+    <title>JopMed</title>
   </head>
   <body>
-    <header>
-      <div class="logo"></div>
+    <!-- Header Start -->
+    <header class="site-header">
+      <div class="wrapper site-header__wrapper">
+        <div class="site-header__start">
+          <a href="/">
+            <div class="logo">
+              <img src="../static/images/jopmed-logo.svg" alt="JopMed Logo" />
+            </div>
+          </a>
+          <a href="#" class="brand">JopMed Supplies</a>
+        </div>
+        <div class="site-header__middle">
+          <nav class="nav">
+            <ul class="nav__wrapper">
+              <li class="nav__item"><a href="/account">Account</a></li>
+              <li class="nav__item"><a href="/about">About Us</a></li>
+              <li class="nav__item"><a href="/categories">Categories</a></li>
+              <li class="nav__item"><a href="/contact-us">Contact</a></li>
+              <li class="nav__item"><a href="/cart">Cart</a></li>
+              <li class="nav__item"><a href="/orders">Orders</a></li>
+              <li class="nav__item"><a href="/shipping-information">Shipping Information</a></li>
+              <li class="nav__item"><a href="/reviews">Reviews</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="site-header__end">
+          <button class="nav__toggle" id="sign-in-button" aria-expanded="false" type="button">
+            Sign in
+          </button>
+        </div>
+      </div>
     </header>
-    <div class="container">
-      <section class="filters">
-        <div class="locations">
-          <h3>States</h3>
-          <h4>&nbsp;</h4>
-          <div class="popover">
-            <ul>
-              {% for state in states %}
-              <li>
-                <input type="checkbox" data-id="{{ state.id }}" data-name="{{ state.name }}" style="margin-right: 10px;">
-                <h2>{{ state.name }}:</h2>
-                <ul>
-                  {% for city in state.cities %}
-                  <li>
-                    <input type="checkbox" data-id="{{ city.id }}" data-name="{{ city.name }}" style="margin-right: 10px;">
-                    {{ city.name }}
-                  </li>
-                  {% endfor %}
-                </ul>
-              </li>
-              {% endfor %}
-            </ul>
-          </div>
+    <!-- Header End -->
+
+    <main>
+      <section class="about">
+        <div class="wrapper">
+          <h1>Welcome to JopMed Supplies</h1>
+          <p>Your one-stop shop for medical supplies and equipment.</p>
+          <a href="/products" class="btn">Shop Now</a>
         </div>
-        <div class="amenities">
-          <h3>Amenities</h3>
-          <h4>&nbsp;</h4>
-          <div class="popover">
-            <ul>
-              {% for amenity in amenities %}
-              <li>{{ amenity.name }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-        <button type="button">Search</button>
       </section>
-      <div class="placesh1"><h1>Places</h1></div>
-      <section class="places">
-        {% for place in places %}
-        <article>
-          <div class="title_box">
-            <h2>{{ place.name }}</h2>
-            <div class="price_by_night">${{ place.price_by_night }}</div>
-          </div>
-          <div class="information">
-            <div class="max_guest">{{ place.max_guest }} Guest{% if place.max_guest != 1 %}s{% endif %}</div>
-            <div class="number_rooms">{{ place.number_rooms }} Bedroom{% if place.number_rooms != 1 %}s{% endif %}</div>
-            <div class="number_bathrooms">{{ place.number_bathrooms }} Bathroom{% if place.number_bathrooms != 1 %}s{% endif %}</div>
-          </div>
-          <div class="user">
-            <b>Owner:</b> {{ place.user.first_name }} {{ place.user.last_name }}
-          </div>
-          <div class="description">
-            {{ place.description | safe }}
-          </div>
-          <div class="reviews" style="margin-top: 40px;">
-            <h2 style="font-size: 16px; border-bottom: 1px solid #DDDDDD;">Reviews <span class="toggle-reviews" data-place-id="{{ place.id }}">show</span></h2>
-            <ul class="review-list" style="list-style: none;"></ul>
-          </div>
-        </article>
-        {% endfor %}
-      </section>
-    </div>
+      <!-- Main content goes here -->
+    </main>
+
     <footer>
-      <p>Holberton School</p>
+      <p>JopMed Online Store</p>
+      <nav class="footer-nav">
+        <ul class="footer-nav__wrapper">
+          <li class="nav__item"><a href="/about">About Us!</a></li>
+          <li class="nav__item"><a href="/account">My account</a></li>
+          <li class="nav__item"><a href="/cart">Cart</a></li>
+          <li class="nav__item"><a href="/categories">Categories</a></li>
+          <li class="nav__item"><a href="/contact-us">Contact</a></li>
+          <li class="nav__item"><a href="/orders">Orders</a></li>
+          <li class="nav__item"><a href="/products">Products</a></li>
+          <li class="nav__item"><a href="/reviews">Reviews</a></li>
+          <li class="nav__item"><a href="/services">Services</a></li>
+          <li class="nav__item"><a href="/shipping-information">Shipping Information</a></li>
+          <li class="nav__item"><a href="/sign-in">Sign In</a></li>
+          <li class="nav__item"><a href="/sign-up">Sign Up</a></li>
+          <li class="nav__item"><a href="/sign-out">Sign Out</a></li>
+        </ul>
+      </nav>
     </footer>
+    <script src="../static/scripts/header.js"></script>
   </body>
 </html>
