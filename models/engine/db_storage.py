@@ -37,9 +37,11 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Doctors": Doctors, "File_Uploads": File_Uploads,
            "Inventory": Inventory, "Order_Items": Order_Items,
            "Orders": Orders, "Payment_Information": Payment_Information,
-           "Payments": Payments, "Prescriptions": Prescriptions, "Product_categories": Product_Categories,
+           "Payments": Payments, "Prescriptions": Prescriptions,
+           "Product_categories": Product_Categories,
            "Product_Tags": Product_Tags, "Product": Product_Tags,
-           "Products": Products, "Products": Products, "Product_Images": Product_Images,
+           "Products": Products, "Products": Products,
+           "Product_Images": Product_Images,
            "Reviews": Reviews,
            "Roles": Roles, "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
@@ -70,6 +72,8 @@ class DBStorage:
         """query on the current database session"""
         new_dict = {}
         for clss in classes:
+            if clss == "BaseModel":
+                continue
             if cls is None or cls is classes[clss] or cls is clss:
                 objs = self.__session.query(classes[clss]).all()
                 for obj in objs:
@@ -112,7 +116,8 @@ class DBStorage:
         if isinstance(id, tuple):
             # Handle composite keys
             query = self.__session.query(cls)
-            for key, value in zip(cls.__table__.primary_key.columns.keys(), id):
+            primary_keys = cls.__table__.primary_key.columns.keys()
+            for key, value in zip(primary_keys, id):
                 query = query.filter(getattr(cls, key) == value)
             return query.first()
         else:
@@ -157,5 +162,5 @@ class DBStorage:
         query = self.__session.query(cls)
         for key, value in kwargs.items():
             query = query.filter(getattr(cls, key) == value)
-        
+
         return query.all()
