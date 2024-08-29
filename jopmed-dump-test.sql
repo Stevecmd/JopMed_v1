@@ -16,6 +16,8 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 -- Create test database + user if doesn't exist
+DROP DATABASE IF EXISTS jopmed_test_db;
+
 CREATE DATABASE IF NOT EXISTS jopmed_test_db;
 CREATE USER IF NOT EXISTS 'JOPMED_test'@'localhost' IDENTIFIED BY 'JOPMED_test_pwd';
 GRANT ALL ON jopmed_test_db.* TO 'JOPMED_test'@'localhost';
@@ -23,6 +25,7 @@ FLUSH PRIVILEGES;
 
 -- Use the test database
 USE jopmed_test_db;
+DROP TABLE IF EXISTS users;
 
 -- Users Table
 CREATE TABLE users (
@@ -39,11 +42,12 @@ CREATE TABLE users (
     UNIQUE (username)
 );
 
-INSERT INTO users (username, email, password, first_name, last_name, created_at, updated_at) VALUES
-('johndoe', 'johndoe@example.com', 'password123', 'John', 'Doe', NOW(), NOW()),
+INSERT INTO users (username, email, password, first_name, last_name, created_at, updated_at) 
+VALUES ('johndoe', 'johndoe@example.com', 'password123', 'John', 'Doe', NOW(), NOW()),
 ('janedoe', 'janedoe@example.com', 'password456', 'Jane', 'Doe', NOW(), NOW());
 
 -- Addresses Table
+DROP TABLE IF EXISTS addresses;
 CREATE TABLE addresses (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -63,6 +67,8 @@ INSERT INTO addresses (user_id, city, country, zip_code, street_address, phone_n
 (2, 'Los Angeles', 'USA', '90001', '456 Elm St', '098-765-4321', NOW(), NOW());
 
 -- Payment Information Table
+DROP TABLE IF EXISTS payment_information;
+
 CREATE TABLE payment_information (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -81,7 +87,9 @@ INSERT INTO payment_information (user_id, card_number, card_expiry_date, card_cv
 (2, '5555555555554444', '2024-11-01', '456', NOW(), NOW());
 
   
--- Shipping Methods Table  
+-- Shipping Methods Table
+DROP TABLE IF EXISTS shipping_methods;
+
 CREATE TABLE shipping_methods (  
    id INT NOT NULL AUTO_INCREMENT,  
    name VARCHAR(255) NOT NULL,  
@@ -98,6 +106,8 @@ INSERT INTO shipping_methods (name, description, created_at, updated_at) VALUES
 
   
 -- Shipping Information Table
+DROP TABLE IF EXISTS shipping_information;
+
 CREATE TABLE shipping_information (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -118,6 +128,8 @@ INSERT INTO shipping_information (user_id, address_id, shipping_method_id, track
 (2, 2, 2, 'TRACK67890', NOW(), NOW()); -- Express Shipping for Jane Doe
 
 -- Categories Table
+DROP TABLE IF EXISTS categories;
+
 CREATE TABLE categories (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -134,7 +146,9 @@ INSERT INTO categories (name, slug, description, created_at, updated_at) VALUES
 ('Medicines', 'medicines', 'Various types of medicines', NOW(), NOW()),
 ('Supplements', 'supplements', 'Health supplements and vitamins', NOW(), NOW());
   
--- Product Categories Table  
+-- Product Categories Table
+DROP TABLE IF EXISTS product_categories;
+
 CREATE TABLE product_categories (  
    id INT NOT NULL AUTO_INCREMENT,  
    product_id INT NOT NULL,  
@@ -152,6 +166,8 @@ INSERT INTO product_categories (product_id, category_id, created_at, updated_at)
 (2, 2, NOW(), NOW());
   
 -- Products/Medicines Table
+DROP TABLE IF EXISTS products;
+
 CREATE TABLE products (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -170,7 +186,9 @@ INSERT INTO products (name, description, price, stock, category, slug, created_a
 ('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 'Medicines', 'paracetamol', NOW(), NOW()),
 ('Vitamin C', 'Immune system booster', 10.50, 200, 'Supplements', 'vitamin-c', NOW(), NOW());
 
--- Product Images Table  
+-- Product Images Table
+DROP TABLE IF EXISTS product_images;
+
 CREATE TABLE product_images (  
    id INT NOT NULL AUTO_INCREMENT,  
    product_id INT NOT NULL,  
@@ -187,6 +205,8 @@ INSERT INTO product_images (product_id, image_url, created_at, updated_at) VALUE
 (2, 'http://example.com/images/vitamin-c.jpg', NOW(), NOW());
   
 -- Orders Table
+DROP TABLE IF EXISTS orders;
+
 CREATE TABLE orders (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -207,6 +227,8 @@ INSERT INTO orders (user_id, status, payment_method, total_amount, created_at, u
 (2, 'completed', 'paypal', 21.00, NOW(), NOW());
 
 -- Order Items Table
+DROP TABLE IF EXISTS order_items;
+
 CREATE TABLE order_items (
     id INT NOT NULL AUTO_INCREMENT,
     order_id INT NOT NULL,
@@ -226,6 +248,8 @@ INSERT INTO order_items (order_id, product_id, quantity, price, created_at, upda
 (2, 2, 2, 10.50, NOW(), NOW()); -- 2 Vitamin C in order 2
 
 -- Inventory Management Table
+DROP TABLE IF EXISTS inventory;
+
 CREATE TABLE inventory (
     id INT NOT NULL AUTO_INCREMENT,
     product_id INT NOT NULL,
@@ -245,6 +269,8 @@ INSERT INTO inventory (product_id, supplier, quantity, restock_level, restock_da
 (2, 'Supplier B', 200, 30, NOW(), NOW(), NOW());
 
 -- Payments Table
+DROP TABLE IF EXISTS payments;
+
 CREATE TABLE payments (
     id INT NOT NULL AUTO_INCREMENT,
     order_id INT NOT NULL,
@@ -264,6 +290,8 @@ INSERT INTO payments (order_id, payment_status, amount, transaction_id, payment_
 (2, 'completed', 21.00, 'TXN789012', NOW(), NOW(), NOW());
 
 -- Reviews Table
+DROP TABLE IF EXISTS reviews;
+
 CREATE TABLE reviews (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -283,6 +311,8 @@ INSERT INTO reviews (user_id, product_id, comment, rating, created_at, updated_a
 (2, 2, 'Not satisfied with the quality.', 2, NOW(), NOW());
   
 -- Tags Table
+DROP TABLE IF EXISTS tags;
+
 CREATE TABLE tags (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -300,6 +330,8 @@ INSERT INTO tags (name, slug, description, created_at, updated_at) VALUES
 ('Immune Support', 'immune-support', 'Products for immune support', NOW(), NOW());
 
 -- Products Categories Table
+DROP TABLE IF EXISTS products_categories;
+
 CREATE TABLE products_categories (
     category_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -314,6 +346,8 @@ INSERT INTO products_categories (category_id, product_id) VALUES
 (2, 2); -- Vitamin C in Supplements category
 
 -- Products Tags Table
+DROP TABLE IF EXISTS products_tags;
+
 CREATE TABLE products_tags (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
@@ -330,6 +364,8 @@ INSERT INTO products_tags (product_id, tag_id, created_at, updated_at) VALUES
 (2, 2, NOW(), NOW()); -- Vitamin C tagged with Immune Support
   
 -- Users Roles Table - associate users with their respective roles
+DROP TABLE IF EXISTS users_roles;
+
 CREATE TABLE users_roles (
     user_id INT NOT NULL,
     role_id INT NOT NULL,
@@ -345,6 +381,8 @@ INSERT INTO users_roles (user_id, role_id, created_at) VALUES
 (2, 2, NOW()); -- Jane Doe with role 2
 
 -- Roles Table - defines the different roles available in the system
+DROP TABLE IF EXISTS roles;
+
 CREATE TABLE roles (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(80) NOT NULL,
@@ -361,6 +399,8 @@ INSERT INTO roles (name, description, created_at, updated_at) VALUES
 ('Customer', 'Customer role', NOW(), NOW());
 
 -- Comments Table
+DROP TABLE IF EXISTS comments;
+
 CREATE TABLE comments (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -380,6 +420,8 @@ INSERT INTO comments (user_id, product_id, content, rating, created_at, updated_
 (2, 2, 'Not satisfied with the quality.', 2, NOW(), NOW());
   
 -- File Uploads Table
+DROP TABLE IF EXISTS file_uploads;
+
 CREATE TABLE file_uploads (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -390,6 +432,7 @@ CREATE TABLE file_uploads (
     original_name VARCHAR(255) NOT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    upload_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     tag_id INT,
     product_id INT,
     category_id INT,
@@ -401,28 +444,37 @@ CREATE TABLE file_uploads (
 );
 
 -- Insert sample data into file_uploads table
-INSERT INTO file_uploads (user_id, type, file_path, file_name, file_size, original_name, created_at, updated_at, tag_id, product_id, category_id) VALUES
-(1, 'image', '/uploads/images/paracetamol.jpg', 'paracetamol.jpg', 1024, 'paracetamol.jpg', NOW(), NOW(), 1, 1, 1),
-(2, 'image', '/uploads/images/vitamin-c.jpg', 'vitamin-c.jpg', 2048, 'vitamin-c.jpg', NOW(), NOW(), 2, 2, 2);
+INSERT INTO file_uploads (user_id, type, file_path, file_name, file_size, original_name, created_at, updated_at, upload_date, tag_id, product_id, category_id) VALUES
+(1, 'image', '/uploads/images/paracetamol.jpg', 'paracetamol.jpg', 1024, 'paracetamol.jpg', NOW(), NOW(), NOW(), 1, 1, 1),
+(2, 'image', '/uploads/images/vitamin-c.jpg', 'vitamin-c.jpg', 2048, 'vitamin-c.jpg', NOW(), NOW(), NOW(), 2, 2, 2);
 
 -- Prescription Table
+DROP TABLE IF EXISTS prescriptions;
+
 CREATE TABLE prescriptions (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
     doctor_id INT NOT NULL,
+    medication VARCHAR(255) NOT NULL,
+    dosage VARCHAR(255) NOT NULL,
+    instructions TEXT NOT NULL,
     prescription_date DATETIME NOT NULL,
     expiration_date DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (doctor_id) REFERENCES doctors(id)
 );
 
 -- Insert sample data into prescriptions table
-INSERT INTO prescriptions (user_id, doctor_id, prescription_date, expiration_date) VALUES
-(1, 1, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR)),
-(2, 2, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR));
+INSERT INTO prescriptions (user_id, doctor_id, medication, dosage, instructions, prescription_date, expiration_date) VALUES
+(1, 1, 'Medication A', 'Dosage A', 'Instructions A', NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR)),
+(2, 2, 'Medication B', 'Dosage B', 'Instructions B', NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR));
 
 -- Doctors Table
+DROP TABLE IF EXISTS doctors;
+
 CREATE TABLE doctors (
     id INT NOT NULL AUTO_INCREMENT,
     first_name VARCHAR(255) NOT NULL,
@@ -469,3 +521,6 @@ CREATE INDEX idx_users_roles_role_id ON users_roles (role_id);
 CREATE INDEX idx_comments_user_id ON comments (user_id);
 CREATE INDEX idx_comments_product_id ON comments (product_id);
 CREATE INDEX idx_file_uploads_user_id ON file_uploads (user_id);
+-- Drop the foreign key constraint on users_roles before dropping the users table
+ALTER TABLE `users_roles` DROP FOREIGN KEY `users_roles_ibfk_1`;
+
