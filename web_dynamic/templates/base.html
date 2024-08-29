@@ -17,16 +17,17 @@
         <div class="wrapper site-header__wrapper">
             <div class="site-header__start">
                 <div class="logo">
-                    <img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" />
+                    <a href="/"><img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" /></a>
                 </div>
                 <a href="#" class="brand">JopMed Supplies</a>
             </div>
             <div class="site-header__middle">
                 <nav class="nav">
                     <ul class="nav__wrapper">
-                        <li class="nav__item"><a href="/">Home</a></li>
-                        <li class="nav__item"><a href="/products">Products</a></li>
-                        <li class="nav__item"><a href="/contact">Contact</a></li>
+                        <li class="nav__item"><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+                        <li class="nav__item"><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
+                        <li class="nav__item"><a href="/services" class="{% if request.path == '/services' %}active{% endif %}">Services</a></li>
+                        <li class="nav__item"><a href="/products" class="{% if request.path == '/products' %}active{% endif %}">Products</a></li>
                     </ul>
                 </nav>
             </div>
@@ -47,14 +48,14 @@
         <p>JopMed Online Store</p>
         <nav class="footer-nav">
             <ul class="footer-nav__wrapper">
-                <li class="nav__item"><a href="#">Categories</a></li>
-                <li class="nav__item"><a href="#">Contact</a></li>
-                <li class="nav__item"><a href="#">Sign In</a></li>
-                <li class="nav__item"><a href="#">Sign Up</a></li>
-                <li class="nav__item"><a href="#">Cart</a></li>
-                <li class="nav__item"><a href="#">Orders</a></li>
-                <li class="nav__item"><a href="#">Account</a></li>
-                <li class="nav__item"><a href="#">Shipping Information</a></li>
+                <li class="nav__item"><a href="/categories">Categories</a></li>
+                <li class="nav__item"><a href="/contact-us">Contact</a></li>
+                <!-- <li class="nav__item"><a href="/sign-in">Sign In</a></li>
+                <li class="nav__item"><a href="/sign-up">Sign Up</a></li>
+                <li class="nav__item"><a href="#">Cart</a></li> -->
+                <!-- <li class="nav__item"><a href="#">Orders</a></li> -->
+                <li class="nav__item"><a href="/account">Account</a></li>
+                <li class="nav__item"><a href="/shipping-information">Shipping Information</a></li>
                 <li class="nav__item"><a href="#">Admin</a></li>
             </ul>
         </nav>
