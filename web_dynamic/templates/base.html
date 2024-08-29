@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}JopMed{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/common.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/header.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/footer.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/filters.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/jopmed.js') }}"></script>
+</head>
+<body>
+    <!-- Header Start -->
+    <header class="site-header">
+        <div class="wrapper site-header__wrapper">
+            <div class="site-header__start">
+                <div class="logo">
+                    <img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" />
+                </div>
+                <a href="#" class="brand">JopMed Supplies</a>
+            </div>
+            <div class="site-header__middle">
+                <nav class="nav">
+                    <ul class="nav__wrapper">
+                        <li class="nav__item"><a href="/">Home</a></li>
+                        <li class="nav__item"><a href="/products">Products</a></li>
+                        <li class="nav__item"><a href="/contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="site-header__end">
+                <button class="nav__toggle" id="sign-in-button" aria-expanded="false" type="button">
+                    Sign in
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- Header End -->
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>JopMed Online Store</p>
+        <nav class="footer-nav">
+            <ul class="footer-nav__wrapper">
+                <li class="nav__item"><a href="#">Categories</a></li>
+                <li class="nav__item"><a href="#">Contact</a></li>
+                <li class="nav__item"><a href="#">Sign In</a></li>
+                <li class="nav__item"><a href="#">Sign Up</a></li>
+                <li class="nav__item"><a href="#">Cart</a></li>
+                <li class="nav__item"><a href="#">Orders</a></li>
+                <li class="nav__item"><a href="#">Account</a></li>
+                <li class="nav__item"><a href="#">Shipping Information</a></li>
+                <li class="nav__item"><a href="#">Admin</a></li>
+            </ul>
+        </nav>
+    </footer>
+</body>
+</html>
