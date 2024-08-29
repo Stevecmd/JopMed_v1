@@ -49,7 +49,7 @@ Run the cat command again with the updated root user credentials:
 `cat jopmed-dump-prod.sql | mysql -uroot -p`
 
 - Run the app
-`JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db python3 -m web_dynamic.jopmed`
+`JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_dev_db JOPMED_TYPE_STORAGE=db python3 -m web_dynamic.jopmed`
 
 0x05
 - Never Fail
@@ -57,7 +57,7 @@ Run the cat command again with the updated root user credentials:
 Test the `Test` database and see the output:
 1. `JOPMED_ENV=test JOPMED_MYSQL_USER=JOPMED_test JOPMED_MYSQL_PWD=JOPMED_test_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_test_db JOPMED_TYPE_STORAGE=db python3 -m unittest discover tests 2>&1 /dev/null | tail -n 1`
 2. Test using the test database:
-`JOPMED_ENV=test JOPMED_MYSQL_USER=JOPMED_test JOPMED_MYSQL_PWD=JOPMED_test_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_test_db JOPMED_TYPE_STORAGE=db python3 -m unittest discover tests`
+`JOPMED_ENV=test JOPMED_MYSQL_USER=JOPMED_test JOPMED_MYSQL_PWD=JOPMED_test_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_test_db JOPMED_TYPE_STORAGE=db python3 -m unittest discover tests`
 3. Test .get() and .count() methods
 `python3 ./test_get_count.py`
 
