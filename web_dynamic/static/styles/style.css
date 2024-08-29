@@ -24,7 +24,10 @@ html {
 }
 
 body {
-  font-family: "Roboto", sans-serif;
+  margin: 0;
+  color: #484848;
+  font-size: 14px;
+  font-family: Circular,"Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 .sr-only {
@@ -70,4 +73,55 @@ body {
 .button--icon {
   min-width: initial;
   padding: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+  }
+
+  .site-header__wrapper {
+      flex-direction: column;
+      align-items: flex-start;
+  }
+
+  .footer-nav__wrapper {
+      flex-direction: column;
+      align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+      width: 100%;
+      padding: 0.5rem;
+  }
+
+  .nav__wrapper {
+      flex-direction: column;
+      align-items: flex-start;
+  }
+}
+
+/* Add styles for home-content */
+.home-content {
+  padding: 1rem 2%; /* Small padding on the left and right using relativity */
+  background-color: #f9f9f9; /* Light background color */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  text-align: center; /* Center-align text */
+  margin: 2rem 0; /* Vertical margin */
+}
+
+.home-content h1 {
+  font-size: 2rem; /* Larger font size for the heading */
+  color: #333; /* Darker color for the heading */
+  margin-bottom: 1rem; /* Space below the heading */
+}
+
+.home-content p {
+  font-size: 1.2rem; /* Slightly larger font size for the paragraph */
+  color: #666; /* Gray color for the paragraph */
+  margin-bottom: 1rem; /* Space below the paragraph */
 }

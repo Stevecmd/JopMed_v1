@@ -26,6 +26,7 @@
 
   /* Center the footer content */
 footer {
+  background-color: #def7ff;
   text-align: center;
   padding: 1rem 0;
 }
