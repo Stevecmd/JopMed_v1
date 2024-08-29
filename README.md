@@ -8,7 +8,7 @@ The console is the first segment of the JopMed project.
 * Update attributes of an object
 * Destroy an object
 
-## Table of Content
+## Table of Contents
 
 
 ## Environment
@@ -16,10 +16,10 @@ This project is interpreted/tested on Ubuntu 14.04 LTS using python3 (version 3.
 
 ### Activate a Virtual environment:
 - Create a Virtual Environment:
-`python3 -m venv venv`
+`python3 -m venv myvenv`
 
 - Activate the Virtual Environment:
-`source venv/bin/activate`
+`source myvenv/bin/activate`
 
 ### Install requirements
 `pip install -r requirements.txt`
@@ -27,9 +27,20 @@ This project is interpreted/tested on Ubuntu 14.04 LTS using python3 (version 3.
 ## Installation
 * Clone this repository: `git clone ""`
 * Access Jopmed directory: `cd JOPMED_V1`
-* Run jopmed(interactively): `./console` and enter command
+* Run jopmed(interactively): `./console.py` and enter command
 * If it doesnt work use an explicit path for example: `python /media/stevecmd/48444E06444DF6EA/ALX/JopMed_v1/console.py`
 * Run jopmed(non-interactively): `echo "<command>" | ./console.py`
+
+## RESTful API
+The project relies on a `RESTful - Flask API`. <br />
+Below is a breakdown of the key aspects:
+1. Flask Application: The code starts by importing necessary modules and creating a Flask application instance.
+2. CORS Configuration: The CORS (Cross-Origin Resource Sharing) module is used to allow cross-origin requests to the API.
+3. Error Handling: The code defines a custom 404 error handler to return a JSON response for not found resources.
+4. Swagger Documentation: The Flasgger library is used to generate Swagger documentation for the API.
+5. Routes and Endpoints: The API defines several routes and endpoints for managing users, addresses, orders, doctors, comments, and other entities. These endpoints support HTTP methods like GET, POST, PUT, and DELETE.
+6. Database Storage: The code interacts with a storage engine (likely an ORM like SQLAlchemy) to perform CRUD (Create, Read, Update, Delete) operations on the database models.
+7. Response Handling: The API returns JSON responses for successful operations and provides appropriate error responses for failed requests.
 
 ## File Descriptions
 [console.py](console.py) - the console contains the entry point of the command interpreter. 
@@ -48,22 +59,43 @@ List of commands this console current supports:
 * `def __init__(self, *args, **kwargs)` - Initialization of the base model
 * `def __str__(self)` - String representation of the BaseModel class
 * `def save(self)` - Updates the attribute `updated_at` with the current datetime
-* `def to_dict(self)` - returns a dictionary containing all keys/values of the instance
+* `def to_dict(self)` - Returns a dictionary containing all keys/values of the instance
+* `def delete(self)` - Deletes the current instance from the storage
 
 Classes inherited from Base Model:
-* [amenity.py](/models/amenity.py)
-* [city.py](/models/city.py)
-* [place.py](/models/place.py)
-* [review.py](/models/review.py)
-* [state.py](/models/state.py)
-* [user.py](/models/user.py)
+* [addresses.py](/models/addresses.py)
+* [categories.py](/models/categories.py)
+* [comments.py](/models/comments.py)
+* [doctors.py](/models/doctors.py)
+* [file_uploads.py](/models/file_uploads.py)
+* [inventory.py](/models/inventory.py)
+* [order_items.py](/models/order_items.py)
+* [orders.py](/models/orders.py)
+* [payment_information.py](/models/payment_information.py)
+* [payments.py](/models/payments.py)
+* [prescriptions.py](/models/prescriptions.py)
+* [product_categories.py](/models/product_categories.py)
+* [product_images.py](/models/product_images.py)
+* [product_tags.py](/models/product_tags.py)
+* [products.py](/models/products.py)
+* [reviews.py](/models/reviews.py)
+* [roles.py](/models/roles.py)
+* [shipping_information.py](/models/shipping_information.py)
+* [shipping_methods.py](/models/shipping_methods.py)
+* [tags.py](/models/tags.py)
+* [user_roles.py](/models/user_roles.py)
+* [users.py](/models/users.py)
 
 #### `/models/engine` directory contains File Storage class that handles JASON serialization and deserialization :
 [file_storage.py](/models/engine/file_storage.py) - serializes instances to a JSON file & deserializes back to instances
-* `def all(self)` - returns the dictionary __objects
+* `def all(self)` - returns the dictionary __objects, optionally filtered by class
 * `def new(self, obj)` - sets in __objects the obj with key <obj class name>.id
 * `def save(self)` - serializes __objects to the JSON file (path: __file_path)
-* ` def reload(self)` -  deserializes the JSON file to __objects
+* `def reload(self)` - deserializes the JSON file to __objects
+* `def delete(self)` - deletes obj from __objects if it’s inside
+* `def close(self)` - calls reload() method for deserializing the JSON file to objects
+* `def get(self, cls, id)` - returns the object based on the class name and its ID, or None if not found
+* `def count(self)` - counts the number of objects in storage, optionally filtered by class
 
 #### `/tests` directory contains all unit test cases for this project:
 [/test_models/test_base_model.py](/tests/test_models/test_base_model.py) - Contains the TestBaseModel and TestBaseModelDocs classes
@@ -153,6 +185,9 @@ EOF  all  create  destroy  help  quit  exit  show  update
 ** no instance found **
 (jopmed_v1) quit
 ```
+
+## Tools
+[SQL-Checker](https://www.coderstool.com/sql-syntax-checker)
 
 ## Bugs
 No known bugs at this time. 

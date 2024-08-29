@@ -15,18 +15,16 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Drop database
-DROP DATABASE IF EXISTS jopmed_dev_db;
+-- Create test database + user if doesn't exist
+DROP DATABASE IF EXISTS jopmed_test_db;
 
--- Create database + user if doesn't exist
-CREATE DATABASE IF NOT EXISTS jopmed_dev_db;
-CREATE USER IF NOT EXISTS 'jopmed_dev'@'localhost';
-SET PASSWORD FOR 'jopmed_dev'@'localhost' = 'jopmed_dev_pwd';
-GRANT ALL ON jopmed_dev_db.* TO 'jopmed_dev'@'localhost';
-GRANT SELECT ON performance_schema.* TO 'jopmed_dev'@'localhost';
+CREATE DATABASE IF NOT EXISTS jopmed_test_db;
+CREATE USER IF NOT EXISTS 'JOPMED_test'@'localhost' IDENTIFIED BY 'JOPMED_test_pwd';
+GRANT ALL ON jopmed_test_db.* TO 'JOPMED_test'@'localhost';
 FLUSH PRIVILEGES;
 
-USE jopmed_dev_db;
+-- Use the test database
+USE jopmed_test_db;
 DROP TABLE IF EXISTS users;
 
 -- Users Table
@@ -523,3 +521,6 @@ CREATE INDEX idx_users_roles_role_id ON users_roles (role_id);
 CREATE INDEX idx_comments_user_id ON comments (user_id);
 CREATE INDEX idx_comments_product_id ON comments (product_id);
 CREATE INDEX idx_file_uploads_user_id ON file_uploads (user_id);
+-- Drop the foreign key constraint on users_roles before dropping the users table
+ALTER TABLE `users_roles` DROP FOREIGN KEY `users_roles_ibfk_1`;
+
