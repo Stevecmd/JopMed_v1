@@ -18,9 +18,9 @@ class Categories(BaseModel, Base):
         description = Column(Text, nullable=True)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-        
-        # Define relationships
+
         products = relationship("Products", secondary="product_categories", back_populates="categories")
+        file_uploads = relationship("File_Uploads", back_populates="category")
     else:
         name = ""
         slug = ""

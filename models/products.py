@@ -23,11 +23,12 @@ class Products(BaseModel, Base):
     """Representation of Products """
     if models.storage_t == 'db':
         __tablename__ = 'products'
+        id = Column(Integer, primary_key=True, autoincrement=True)
         name = Column(String(255), nullable=False)
         description = Column(Text)
         price = Column(DECIMAL(10, 2), nullable=False)
         stock = Column(Integer, nullable=False)
-        category = Column(String(255))
+        category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
         slug = Column(String(255))
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(
@@ -43,6 +44,11 @@ class Products(BaseModel, Base):
         tags = relationship(
             "Tags",
             secondary="products_tags",
+            back_populates="products"
+        )
+        categories = relationship(
+            "Categories",
+            secondary="product_categories",
             back_populates="products"
         )
 

@@ -24,6 +24,7 @@ from flask import Flask, request, render_template, make_response, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
 from flasgger.utils import swag_from
+from api.v1.views import app_views
 import logging
 from sqlalchemy.exc import IntegrityError
 
@@ -32,6 +33,8 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
+
+app.register_blueprint(app_views)
 
 @app.teardown_appcontext
 def close_db(error):

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # """ Index """
 
+import logging
 import models
 from models.addresses import Addresses
 from models.base_model import BaseModel
@@ -25,7 +26,7 @@ from models.users import User
 from models import storage
 from .. import app
 
-from flask import Flask, Blueprint, jsonify, request, abort, render_template
+from flask import Flask, Blueprint, jsonify, make_response, request, abort, render_template
 from api.v1.views import app_views
 
 
@@ -95,6 +96,53 @@ def search_products():
 
     return jsonify(products)
 
+@app_views.route('/users', methods=['GET'])
+def get_users():
+    users = storage.all(User).values()
+    return jsonify([user.to_dict() for user in users])
+
+@app_views.route('/users/<user_id>', methods=['GET'])
+def get_user(user_id):
+    logging.info(f"Fetching user with ID: {user_id}")
+    user = storage.get(User, user_id)
+    if not user:
+        return make_response(jsonify({"error": "User not found"}), 404)
+    logging.info(f"User found: {user.to_dict()}")
+    return jsonify(user.to_dict())
+
+@app_views.route('/users', methods=['POST'])
+def create_user():
+    data = request.get_json()
+    if not data:
+        abort(400, description="Not a JSON")
+    user = User(**data)
+    user.save()
+    return make_response(jsonify(user.to_dict()), 201)
+
+@app_views.route('/users/<user_id>', methods=['PUT'])
+def update_user(user_id):
+    user = storage.get(User, user_id)
+    if not user:
+        return app.not_found(404)
+    data = request.get_json()
+    if not data:
+        abort(400, description="Not a JSON")
+    for key, value in data.items():
+        setattr(user, key, value)
+    user.save()
+    return jsonify(user.to_dict())
+
+@app_views.route('/users/<user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    logging.info(f"Deleting user with ID: {user_id}")
+    user = storage.get(User, user_id)
+    if not user:
+        return app.not_found(404)
+    user_details = user.to_dict()
+    user.delete()
+    storage.save()
+    logging.info(f"User with ID {user_id} deleted")
+    return make_response(jsonify(user_details), 200)
 
 @app.route('/')
 def index():

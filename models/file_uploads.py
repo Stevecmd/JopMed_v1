@@ -16,7 +16,6 @@ class File_Uploads(BaseModel, Base):
     file_path = Column(String(256), nullable=False)
     upload_date = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     
-    # Define relationship with Category if needed
     category = relationship("Categories", back_populates="file_uploads")
 
     def __init__(self, *args, **kwargs):
