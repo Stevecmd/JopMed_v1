@@ -29,7 +29,6 @@ class Products(BaseModel, Base):
         price = Column(DECIMAL(10, 2), nullable=False)
         stock = Column(Integer, nullable=False)
         category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
-        slug = Column(String(255))
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(
             DateTime,
