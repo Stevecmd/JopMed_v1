@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """ Flask Application """
-from api.v1.views import app_views
+
 from models import storage
 from models.users import User
 from models.addresses import Addresses
@@ -310,20 +310,61 @@ def delete_order(order_id):
         return make_response(jsonify({'error': 'Internal Server Error'}), 500)
 
 # Order Items Routes
+@app.route('/order_items', methods=['GET'])
+def get_order_items():
+    order_items = storage.all(Order_Items).values()
+    return jsonify([order_item.to_dict() for order_item in order_items])
+
+@app.route('/order_items/<order_item_id>', methods=['GET'])
+def get_order_item(order_item_id):
+    logging.info(f"Fetching order item with ID {order_item_id}")
+    order_item = storage.get(Order_Items, order_item_id)
+    if not order_item:
+        return make_response(jsonify({'error': "Order item not found"}), 404)
+    logging.info(f"Order item with ID {order_item_id} found: {order_item.to_dict()}")
+    return jsonify(order_item.to_dict())
+
 @app.route('/order_items', methods=['POST'])
 def create_order_item():
     data = request.get_json()
     if not data:
-        return make_response(jsonify({'error': 'No input data provided'}), 400)
+        return make_response(jsonify({"error": "Not a JSON"}), 400)
     
     required_fields = ['order_id', 'product_id', 'quantity', 'price']
     for field in required_fields:
         if field not in data:
-            return make_response(jsonify({'error': f'Missing {field}'}), 400)
+            return make_response(jsonify({"error": f"Missing {field}"}), 400)
     
     order_item = Order_Items(**data)
     order_item.save()
     return make_response(jsonify(order_item.to_dict()), 201)
+
+@app.route('/order_items/<order_item_id>', methods=['PUT'])
+def update_order_item(order_item_id):
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({"error": "Not a JSON"}), 400)
+    
+    order_item = storage.get(Order_Items, order_item_id)
+    if not order_item:
+        return make_response(jsonify({'error': "Order item not found"}), 404)
+    
+    for key, value in data.items():
+        if key in ['order_id', 'product_id', 'quantity', 'price']:
+            setattr(order_item, key, value)
+    
+    order_item.save()
+    return jsonify(order_item.to_dict())
+
+@app.route('/order_items/<order_item_id>', methods=['DELETE'])
+def delete_order_item(order_item_id):
+    order_item = storage.get(Order_Items, order_item_id)
+    if not order_item:
+        return make_response(jsonify({'error': "Order item not found"}), 404)
+    
+    order_item.delete()
+    storage.save()
+    return make_response(jsonify({}), 200)
 
 
 # Doctor Routes
