@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """ Flask Application """
 
+from datetime import datetime
 from models import storage
 from models.users import User
 from models.addresses import Addresses
@@ -8,6 +9,7 @@ from models.orders import Orders
 from models.doctors import Doctors
 from models.comments import Comments
 from models.categories import Categories
+from models.orders import Orders
 from models.order_items import Order_Items
 from models.payments import Payments
 from models.product_categories import Product_Categories
@@ -19,6 +21,7 @@ from models.shipping_methods import Shipping_Methods
 from models.shipping_information import Shipping_Information
 from models.roles import Roles
 from models.reviews import Reviews
+from models.wishlist import Wishlist
 from os import environ
 from flask import Flask, request, render_template, make_response, jsonify
 from flask_cors import CORS
@@ -693,7 +696,8 @@ def update_product(product_id):
     if not data:
         return make_response(jsonify({'error': 'Not a JSON'}), 400)
     for key, value in data.items():
-        setattr(product, key, value)
+        if key not in ['id', 'created_at', 'updated_at']:
+            setattr(product, key, value)
     product.save()
     return make_response(jsonify(product.to_dict()), 200)
 
@@ -973,12 +977,14 @@ def delete_role(role_id):
 
 
 # Reviews Routes
+# Read All Reviews:
 @app.route('/reviews', methods=['GET'])
 def get_reviews():
     reviews = storage.all(Reviews).values()
     return jsonify([review.to_dict() for review in reviews])
 
 
+# Read a Single Review:
 @app.route('/reviews/<review_id>', methods=['GET'])
 def get_review(review_id):
     review = storage.get(Reviews, review_id)
@@ -987,6 +993,7 @@ def get_review(review_id):
     return jsonify(review.to_dict())
 
 
+# Create a Review:
 @app.route('/reviews', methods=['POST'])
 def create_review():
     data = request.get_json()
@@ -1006,6 +1013,7 @@ def create_review():
     return make_response(jsonify(new_review.to_dict()), 201)
 
 
+# Update a Review:
 @app.route('/reviews/<review_id>', methods=['PUT'])
 def update_review(review_id):
     review = storage.get(Reviews, review_id)
@@ -1020,6 +1028,7 @@ def update_review(review_id):
     return make_response(jsonify(review.to_dict()), 200)
 
 
+# Delete a Review:
 @app.route('/reviews/<review_id>', methods=['DELETE'])
 def delete_review(review_id):
     review = storage.get(Reviews, review_id)
@@ -1029,6 +1038,144 @@ def delete_review(review_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
+
+# Payment Routes
+# Create a Payment
+@app.route('/payment', methods=['POST'])
+def initiate_payment():
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+    if 'order_id' not in data or 'amount' not in data:
+        return make_response(jsonify({'error': 'Missing order_id or amount'}), 400)
+    
+    order = storage.get(Orders, data['order_id'])
+    if not order:
+        return make_response(jsonify({'error': 'Order not found'}), 404)
+    
+    new_payment = Payments(
+        order_id=data['order_id'],
+        payment_status='pending',
+        amount=data['amount'],
+        transaction_id=data.get('transaction_id', ''),
+        payment_date=datetime.utcnow(),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    new_payment.save()
+    return make_response(jsonify(new_payment.to_dict()), 201)
+
+# Read All Payments
+@app.route('/payments', methods=['GET'])
+def get_payments():
+    payments = storage.all(Payments).values()
+    return jsonify([payment.to_dict() for payment in payments])
+
+# Read a Single Payment
+@app.route('/payments/<payment_id>', methods=['GET'])
+def get_payment(payment_id):
+    payment = storage.get(Payments, payment_id)
+    if not payment:
+        return make_response(jsonify({'error': 'Payment not found'}), 404)
+    return jsonify(payment.to_dict())
+
+# Update a Payment
+@app.route('/payments/<payment_id>', methods=['PUT'])
+def update_payment(payment_id):
+    payment = storage.get(Payments, payment_id)
+    if not payment:
+        return make_response(jsonify({'error': 'Payment not found'}), 404)
+    
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+    
+    for key, value in data.items():
+        if key in ['order_id', 'payment_status', 'amount', 'transaction_id']:
+            setattr(payment, key, value)
+    payment.updated_at = datetime.utcnow()
+    payment.save()
+    return jsonify(payment.to_dict())
+
+# Delete a Payment
+@app.route('/payments/<payment_id>', methods=['DELETE'])
+def delete_payment(payment_id):
+    payment = storage.get(Payments, payment_id)
+    if not payment:
+        return make_response(jsonify({'error': 'Payment not found'}), 404)
+    
+    payment.delete()
+    storage.save()
+    return make_response(jsonify({}), 200)
+
+# Confirm a Payment
+@app.route('/payment/confirm', methods=['POST'])
+def confirm_payment():
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+    if 'payment_id' not in data or 'payment_status' not in data:
+        return make_response(jsonify({'error': 'Missing payment_id or payment_status'}), 400)
+    
+    payment = storage.get(Payments, data['payment_id'])
+    if not payment:
+        return make_response(jsonify({'error': 'Payment not found'}), 404)
+    
+    payment.payment_status = data['payment_status']
+    payment.updated_at = datetime.utcnow()
+    payment.save()
+    return make_response(jsonify(payment.to_dict()), 200)
+
+
+# Wishlist Routes
+@app.route('/wishlist', methods=['GET'])
+def view_wishlist():
+    """Fetch all wishlist items"""
+    wishlists = storage.all(Wishlist).values()
+    return jsonify([wishlist.to_dict() for wishlist in wishlists])
+
+@app.route('/wishlist', methods=['POST'])
+def add_to_wishlist():
+    """Add a new item to the wishlist"""
+    data = request.get_json()
+    if not data or 'user_id' not in data or 'item_name' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    new_item = Wishlist(**data)
+    new_item.save()
+    return jsonify({'message': 'Item added to wishlist'}), 201
+
+@app.route('/wishlist', methods=['PUT'])
+def update_wishlist():
+    """Update an item in the wishlist"""
+    data = request.get_json()
+    if not data or 'id' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    item = storage.get(Wishlist, data['id'])
+    if not item:
+        return jsonify({'error': 'Item not found'}), 404
+
+    for key, value in data.items():
+        if key != 'id':
+            setattr(item, key, value)
+    item.save()
+    return jsonify({'message': 'Item updated in wishlist'}), 200
+
+@app.route('/wishlist', methods=['DELETE'])
+def remove_from_wishlist():
+    """Remove an item from the wishlist"""
+    data = request.get_json()
+    if not data or 'id' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    item = storage.get(Wishlist, data['id'])
+    if not item:
+        return jsonify({'error': 'Item not found'}), 404
+
+    item.delete()
+    storage.save()
+    return jsonify({'message': 'Item removed from wishlist'}), 200
 
 if __name__ == "__main__":
     """ Main Function """

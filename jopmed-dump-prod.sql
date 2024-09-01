@@ -159,16 +159,23 @@ DROP TABLE IF EXISTS categories;
 CREATE TABLE categories (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
+    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
 -- Insert sample data into Categories table
-INSERT INTO categories (name, created_at, updated_at)
+INSERT INTO categories (name, description, created_at, updated_at)
 VALUES
-('Electronics', NOW(), NOW()),
-('Books', NOW(), NOW());
+('Medicines', 'Various types of medicines', NOW(), NOW()),
+('Supplements', 'Health supplements and vitamins', NOW(), NOW()),
+('Medical Devices', 'Equipment and devices used in medical procedures', NOW(), NOW()),
+('First Aid', 'First aid supplies and kits', NOW(), NOW()),
+('Personal Care', 'Personal care products and hygiene items', NOW(), NOW()),
+('Diagnostics', 'Diagnostic tools and equipment', NOW(), NOW()),
+('Surgical Supplies', 'Supplies used in surgical procedures', NOW(), NOW()),
+('Pharmaceuticals', 'Prescription and over-the-counter drugs', NOW(), NOW());
 
 -- Product Categories Table
 DROP TABLE IF EXISTS product_categories;
@@ -217,6 +224,7 @@ CREATE TABLE products (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
+    stock INT NOT NULL,
     category_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -225,11 +233,10 @@ CREATE TABLE products (
 );
 
 -- Insert sample data into Products table
-INSERT INTO products (name, description, price, category_id, created_at, updated_at)
+INSERT INTO products (name, description, price, stock, category_id, created_at, updated_at)
 VALUES
-('Smartphone', 'A cool smartphone.', 699.99, 1, NOW(), NOW()),
-('Laptop', 'A powerful laptop.', 1299.99, 1, NOW(), NOW()),
-('Novel', 'An interesting novel.', 19.99, 2, NOW(), NOW());
+('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 1, NOW(), NOW()),
+('Vitamin C', 'Immune system booster', 10.50, 200, 2, NOW(), NOW());
 
 
 -- Product Images Table
@@ -539,6 +546,25 @@ CREATE TABLE doctors (
 INSERT INTO doctors (first_name, last_name, specialization, email, phone_number, created_at, updated_at) VALUES
 ('John', 'Smith', 'Cardiology', 'john.smith@example.com', '123-456-7890', NOW(), NOW()),
 ('Jane', 'Doe', 'Neurology', 'jane.doe@example.com', '098-765-4321', NOW(), NOW());
+
+-- Wishlist Table
+DROP TABLE IF EXISTS wishlist;
+
+CREATE TABLE wishlist (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Insert sample data into wishlist table
+INSERT INTO wishlist (user_id, item_name, description, created_at, updated_at) VALUES
+(1, 'New Pain Relief Medication', 'A new type of pain relief medication that is more effective.', NOW(), NOW()),
+(2, 'Organic Vitamin C', 'Organic Vitamin C supplements for better immune support.', NOW(), NOW());
 
 -- Create Indexes
 CREATE INDEX idx_users_email ON users (email);
