@@ -30,6 +30,7 @@ class User(BaseModel, Base):
             "Shipping_Information",
             back_populates="user"
         )
+        wishlist_items = relationship("Wishlist", back_populates="user")
 
     else:
         username = ""
