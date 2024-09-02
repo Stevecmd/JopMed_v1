@@ -14,16 +14,14 @@ class Categories(BaseModel, Base):
         __tablename__ = 'categories'
         id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
         name = Column(String(255), nullable=False)
-        slug = Column(String(255), nullable=False, unique=True)
         description = Column(Text, nullable=True)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-        
-        # Define relationships
+
         products = relationship("Products", secondary="product_categories", back_populates="categories")
+        file_uploads = relationship("File_Uploads", back_populates="category")
     else:
         name = ""
-        slug = ""
         description = ""
 
     def __init__(self, *args, **kwargs):
@@ -35,7 +33,6 @@ class Categories(BaseModel, Base):
         dict_rep = super().to_dict()
         dict_rep.update({
             'name': self.name,
-            'slug': self.slug,
             'description': self.description,
             'created_at': self.created_at,
             'updated_at': self.updated_at

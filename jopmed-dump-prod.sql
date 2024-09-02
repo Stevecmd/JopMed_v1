@@ -32,21 +32,27 @@ DROP TABLE IF EXISTS users;
 -- Users Table
 CREATE TABLE users (
     id INT NOT NULL AUTO_INCREMENT,
-    username VARCHAR(64) NOT NULL,
-    email VARCHAR(120) NOT NULL,
-    password VARCHAR(128) NOT NULL,
+    username VARCHAR(64) UNIQUE NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
     first_name VARCHAR(300) NOT NULL,
     last_name VARCHAR(300) NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE (email),
     UNIQUE (username)
 );
 
 INSERT INTO users (username, email, password, first_name, last_name, created_at, updated_at) 
-VALUES ('johndoe', 'johndoe@example.com', 'password123', 'John', 'Doe', NOW(), NOW()),
-('janedoe', 'janedoe@example.com', 'password456', 'Jane', 'Doe', NOW(), NOW());
+VALUES 
+('johndoe', 'johndoe@example.com', 'password123', 'John', 'Doe', NOW(), NOW()),
+('janedoe', 'janedoe@example.com', 'password456', 'Jane', 'Doe', NOW(), NOW()),
+('alice', 'alice@example.com', 'password123', 'Alice', 'Smith', NOW(), NOW()),
+('bob', 'bob@example.com', 'password456', 'Bob', 'Johnson', NOW(), NOW()),
+('charlie', 'charlie@example.com', 'password789', 'Charlie', 'Williams', NOW(), NOW()),
+('david', 'david@example.com', 'password101', 'David', 'Brown', NOW(), NOW()),
+('eve', 'eve@example.com', 'password202', 'Eve', 'Jones', NOW(), NOW());
 
 -- Addresses Table
 DROP TABLE IF EXISTS addresses;
@@ -129,25 +135,48 @@ INSERT INTO shipping_information (user_id, address_id, shipping_method_id, track
 (1, 1, 1, 'TRACK12345', NOW(), NOW()), -- Standard Shipping for John Doe
 (2, 2, 2, 'TRACK67890', NOW(), NOW()); -- Express Shipping for Jane Doe
 
+-- -- Categories Table
+-- DROP TABLE IF EXISTS categories;
+
+-- CREATE TABLE categories (
+--     id INT NOT NULL AUTO_INCREMENT,
+--     name VARCHAR(255) NOT NULL,
+--     slug VARCHAR(255) NOT NULL,
+--     description TEXT,
+--     created_at DATETIME,
+--     updated_at DATETIME,
+--     PRIMARY KEY (id),
+--     UNIQUE (slug)
+-- );
+
+-- -- Insert sample data into categories table
+-- INSERT INTO categories (name, slug, description, created_at, updated_at) VALUES
+-- ('Medicines', 'medicines', 'Various types of medicines', NOW(), NOW()),
+-- ('Supplements', 'supplements', 'Health supplements and vitamins', NOW(), NOW());
+
 -- Categories Table
 DROP TABLE IF EXISTS categories;
-
 CREATE TABLE categories (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL,
     description TEXT,
-    created_at DATETIME,
-    updated_at DATETIME,
-    PRIMARY KEY (id),
-    UNIQUE (slug)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 
--- Insert sample data into categories table
-INSERT INTO categories (name, slug, description, created_at, updated_at) VALUES
-('Medicines', 'medicines', 'Various types of medicines', NOW(), NOW()),
-('Supplements', 'supplements', 'Health supplements and vitamins', NOW(), NOW());
-  
+-- Insert sample data into Categories table
+INSERT INTO categories (name, description, created_at, updated_at)
+VALUES
+('Medicines', 'Various types of medicines', NOW(), NOW()),
+('Supplements', 'Health supplements and vitamins', NOW(), NOW()),
+('Medical Devices', 'Equipment and devices used in medical procedures', NOW(), NOW()),
+('First Aid', 'First aid supplies and kits', NOW(), NOW()),
+('Personal Care', 'Personal care products and hygiene items', NOW(), NOW()),
+('Diagnostics', 'Diagnostic tools and equipment', NOW(), NOW()),
+('Surgical Supplies', 'Supplies used in surgical procedures', NOW(), NOW()),
+('Pharmaceuticals', 'Prescription and over-the-counter drugs', NOW(), NOW());
+
 -- Product Categories Table
 DROP TABLE IF EXISTS product_categories;
 
@@ -167,26 +196,48 @@ INSERT INTO product_categories (product_id, category_id, created_at, updated_at)
 (1, 1, NOW(), NOW()),
 (2, 2, NOW(), NOW());
   
--- Products/Medicines Table
-DROP TABLE IF EXISTS products;
+-- -- Products/Medicines Table
+-- DROP TABLE IF EXISTS products;
 
+-- CREATE TABLE products (
+--     id INT NOT NULL AUTO_INCREMENT,
+--     name VARCHAR(255) NOT NULL,
+--     description TEXT,
+--     price DECIMAL(10, 2) NOT NULL,
+--     stock INT NOT NULL,
+--     category VARCHAR(255),
+--     slug VARCHAR(255),
+--     created_at DATETIME NOT NULL,
+--     updated_at DATETIME NOT NULL,
+--     PRIMARY KEY (id)
+-- );
+
+-- -- Insert sample data into products table
+-- INSERT INTO products (name, description, price, stock, category, slug, created_at, updated_at) VALUES
+-- ('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 'Medicines', 'paracetamol', NOW(), NOW()),
+-- ('Vitamin C', 'Immune system booster', 10.50, 200, 'Supplements', 'vitamin-c', NOW(), NOW());
+
+-- -- Products/Medicines Table
+DROP TABLE IF EXISTS products;
 CREATE TABLE products (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     stock INT NOT NULL,
-    category VARCHAR(255),
-    slug VARCHAR(255),
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    PRIMARY KEY (id)
+    category_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
--- Insert sample data into products table
-INSERT INTO products (name, description, price, stock, category, slug, created_at, updated_at) VALUES
-('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 'Medicines', 'paracetamol', NOW(), NOW()),
-('Vitamin C', 'Immune system booster', 10.50, 200, 'Supplements', 'vitamin-c', NOW(), NOW());
+-- Insert sample data into Products table
+INSERT INTO products (name, description, price, stock, category_id, created_at, updated_at)
+VALUES
+('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 1, NOW(), NOW()),
+('Vitamin C', 'Immune system booster', 10.50, 200, 2, NOW(), NOW());
+
 
 -- Product Images Table
 DROP TABLE IF EXISTS product_images;
@@ -496,15 +547,34 @@ INSERT INTO doctors (first_name, last_name, specialization, email, phone_number,
 ('John', 'Smith', 'Cardiology', 'john.smith@example.com', '123-456-7890', NOW(), NOW()),
 ('Jane', 'Doe', 'Neurology', 'jane.doe@example.com', '098-765-4321', NOW(), NOW());
 
+-- Wishlist Table
+DROP TABLE IF EXISTS wishlist;
+
+CREATE TABLE wishlist (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Insert sample data into wishlist table
+INSERT INTO wishlist (user_id, item_name, description, created_at, updated_at) VALUES
+(1, 'New Pain Relief Medication', 'A new type of pain relief medication that is more effective.', NOW(), NOW()),
+(2, 'Organic Vitamin C', 'Organic Vitamin C supplements for better immune support.', NOW(), NOW());
+
 -- Create Indexes
 CREATE INDEX idx_users_email ON users (email);
 CREATE INDEX idx_users_username ON users (username);
 CREATE INDEX idx_addresses_user_id ON addresses (user_id);
 CREATE INDEX idx_shipping_methods_name ON shipping_methods (name);
 CREATE INDEX idx_categories_name ON categories (name);
-CREATE INDEX idx_categories_slug ON categories (slug);
+-- CREATE INDEX idx_categories_slug ON categories (slug);
 CREATE INDEX idx_products_name ON products (name);
-CREATE INDEX idx_products_slug ON products (slug); -- Create index on slug column
+-- CREATE INDEX idx_products_slug ON products (slug); -- Create index on slug column
 CREATE INDEX idx_products_categories_product_id ON products_categories (product_id);
 CREATE INDEX idx_products_categories_category_id ON products_categories (category_id);
 CREATE INDEX idx_orders_user_id ON orders (user_id);

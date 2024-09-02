@@ -26,6 +26,7 @@ from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
 from models.users_roles import User_Roles
 from models.users import User
+from models.wishlist import Wishlist
 from hashlib import md5
 
 classes = {"Addresses": Addresses, "BaseModel": BaseModel,
@@ -39,7 +40,8 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Reviews": Reviews,
            "Roles": Roles, "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
-           "User_Roles": User_Roles, "User": User}
+           "User_Roles": User_Roles, "User": User,
+           "Wishlist": Wishlist}
 
 
 class FileStorage:
