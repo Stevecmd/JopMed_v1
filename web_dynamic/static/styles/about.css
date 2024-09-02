@@ -1,0 +1,95 @@
+/* Add styles for about-hero */
+.about-hero {
+    background-size: cover;
+    background-position: center;
+    padding: 1rem 2%;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+  }
+  
+  .about-hero__content {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+  
+  .about-hero h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  
+  .about-hero p {
+    font-size: 1.5rem;
+  }
+  
+  /* Enhance about-content styles */
+  .about-content {
+    padding: 0.5rem 1%;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 1rem 0;
+    text-align: left;
+  }
+  
+  .about-content h2 {
+    text-align: center;
+    font-size: 2rem;
+    color: #333;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .about-content p {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+  
+  .about-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .about-list li {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .about-list li i {
+    color: #2fa0f6;
+    margin-right: 0.5rem;
+    font-size: 1.5rem;
+  }
+  
+  /* Add styles for contact-info */
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0.1rem;
+  }
+  
+  .contact-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.1rem;
+    font-size: 1.2rem;
+    color: #666;
+  }
+  
+  .contact-item i {
+    color: #2fa0f6;
+    margin-right: 0.5rem;
+    font-size: 1.5rem;
+  }
