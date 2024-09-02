@@ -52,5 +52,5 @@ class Products(BaseModel, Base):
         )
 
     def __init__(self, *args, **kwargs):
-        """initializes addresses"""
+        """initializes products"""
         super().__init__(*args, **kwargs)

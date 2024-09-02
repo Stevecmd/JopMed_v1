@@ -254,8 +254,8 @@ CREATE TABLE product_images (
 
 -- Insert sample data into product_images table
 INSERT INTO product_images (product_id, image_url, created_at, updated_at) VALUES
-(1, 'http://example.com/images/paracetamol.jpg', NOW(), NOW()),
-(2, 'http://example.com/images/vitamin-c.jpg', NOW(), NOW());
+(1, 'https://media.istockphoto.com/id/1181471590/photo/generic-paracetamol-tablets.jpg?s=612x612&w=0&k=20&c=QPpWqC2DGJ1QZBj522dWb_P8xTJKsHogHAUf9NWMWvY=', NOW(), NOW()),
+(2, 'https://media.istockphoto.com/id/179664597/photo/three-ways-to-get-your-vitamin-c.jpg?s=2048x2048&w=is&k=20&c=lHog66JlWtmVtKbu-eYQm_jkzzVFDih-ECvzDMl6mtk=', NOW(), NOW());
   
 -- Orders Table
 DROP TABLE IF EXISTS orders;

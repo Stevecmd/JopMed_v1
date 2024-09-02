@@ -661,7 +661,19 @@ def update_prescription(prescription_id):
 @app.route('/products', methods=['GET'])
 def get_products():
     products = storage.all(Products).values()
-    return jsonify([product.to_dict() for product in products])
+    product_images = storage.all(Product_Images).values()
+    
+    # Create a dictionary to map product_id to image_url
+    product_images_dict = {image.product_id: image.image_url for image in product_images}
+    
+    # Combine product data with image URLs
+    products_list = []
+    for product in products:
+        product_dict = product.to_dict()
+        product_dict['image_url'] = product_images_dict.get(product.id, 'default-product-image.jpg')
+        products_list.append(product_dict)
+    
+    return jsonify(products_list)
 
 
 @app.route('/products/<product_id>', methods=['GET'])
