@@ -73,7 +73,8 @@ Swagger(app)
 @app.route('/', strict_slashes=False)
 @app.route('/jopmed-home', strict_slashes=False)
 def jopmed():
-    return "Home"
+    """Render the home page"""
+    return render_template('index.html')
 
 
 # Authentication Routes
@@ -81,8 +82,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'Authentication required'}), 401
-            return redirect(url_for('login'))
+            return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -103,18 +103,24 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    data = request.get_json()
-    if not data or 'username' not in data or 'password' not in data:
-        return jsonify({'error': 'Invalid data'}), 400
+    if request.method == 'POST':
+        data = request.form
+        if not data or 'username' not in data or 'password' not in data:
+            flash('Invalid data', 'error')
+            return redirect(url_for('login'))
 
-    user = storage.get(User, data['username'])
-    if user and user.check_password(data['password']):
-        session['user_id'] = user.id
-        return jsonify({'message': 'Login successful'}), 200
-    return jsonify({'error': 'Invalid username or password'}), 401
-
+        user = User.query.filter_by(username=data['username']).first()
+        if user and check_password_hash(user.password, data['password']):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            flash('Login successful', 'success')
+            return redirect(url_for('jopmed'))
+        else:
+            flash('Invalid username or password', 'danger')
+            return redirect(url_for('login'))
+    return render_template('login.html')
 
 @app.route('/logout', methods=['POST'])
 @login_required
@@ -124,7 +130,6 @@ def logout():
     flash('Logged out successfully', 'success')
     return jsonify({'message': 'Logged out successfully'}), 200,
     return redirect(url_for('login'))
-
 
 @app.route('/account')
 @login_required
@@ -160,11 +165,16 @@ def get_user(user_id):
 
 
 @app.route('/users', methods=['POST'])
-@login_required
 def create_user():
     data = request.get_json()
     if not data:
         return make_response(jsonify({'error': 'No input data provided'}), 400)
+    
+    # Hash the password before saving the user
+    password = data.pop('password', None)
+    if password:
+        data['password_hash'] = User().set_password(password)
+    
     user = User(**data)
     user.save()
     return make_response(jsonify(user.to_dict()), 201)
