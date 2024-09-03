@@ -22,17 +22,17 @@
         <div class="wrapper site-header__wrapper">
             <div class="site-header__start">
                 <div class="logo">
-                    <a href="/"><img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" /></a>
+                    <a href="{{ url_for('jopmed') }}"><img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" /></a>
                 </div>
-                <a href="#" class="brand">JopMed Supplies</a>
+                <a href="{{ url_for('jopmed') }}" class="brand">JopMed Supplies</a>
             </div>
             <div class="site-header__middle">
                 <nav class="nav">
                     <ul class="nav__wrapper">
-                        <li class="nav__item"><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
-                        <li class="nav__item"><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
-                        <li class="nav__item"><a href="/services" class="{% if request.path == '/services' %}active{% endif %}">Services</a></li>
-                        <li class="nav__item"><a href="/products" class="{% if request.path == '/products' %}active{% endif %}">Products</a></li>
+                        <li class="nav__item"><a href="{{ url_for('jopmed') }}" class="{% if request.path == url_for('jopmed') %}active{% endif %}">Home</a></li>
+                        <li class="nav__item"><a href="{{ url_for('about') }}" class="{% if request.path == url_for('about') %}active{% endif %}">About</a></li>
+                        <li class="nav__item"><a href="{{ url_for('services') }}" class="{% if request.path == url_for('services') %}active{% endif %}">Services</a></li>
+                        <li class="nav__item"><a href="{{ url_for('products') }}" class="{% if request.path == url_for('products') %}active{% endif %}">Products</a></li>
                     </ul>
                 </nav>
             </div>
@@ -42,7 +42,6 @@
                 </button>
                 <div class="dropdown-menu" id="dropdown-menu">
                     <ul>
-                        <li><a href="{{ url_for('index') }}">Home</a></li>
                         {% if session.get('user_id') %}
                             <li><a href="{{ url_for('account') }}">Account</a></li>
                             <li><a href="{{ url_for('logout') }}">Logout</a></li>
@@ -66,11 +65,11 @@
         <p>JopMed Online Store</p>
         <nav class="footer-nav">
             <ul class="footer-nav__wrapper">
-                <li class="nav__item"><a href="/categories">Categories</a></li>
-                <li class="nav__item"><a href="/contact-us">Contact</a></li>
-                <li class="nav__item"><a href="/account">Account</a></li>
-                <li class="nav__item"><a href="/shipping-information">Shipping Information</a></li>
-                <li class="nav__item"><a href="#">Admin</a></li>
+                <li class="nav__item"><a href="{{ url_for('categories') }}">Categories</a></li>
+                <li class="nav__item"><a href="{{ url_for('contact_us') }}">Contact</a></li>
+                <li class="nav__item"><a href="{{ url_for('account') }}">Account</a></li>
+                <li class="nav__item"><a href="{{ url_for('shipping_information') }}">Shipping Information</a></li>
+                <li class="nav__item"><a href="{{ url_for('admin') }}">Admin</a></li>
             </ul>
         </nav>
     </footer>
