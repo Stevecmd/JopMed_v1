@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Flask, render_template, session, redirect, url_for, flash
 from models import storage
+import logging
 
 app = Flask(__name__)
 app.secret_key = 'jopmed_secret_key'
@@ -111,19 +112,26 @@ def shipping_information():
 from flask import request
 
 @app.route('/login', strict_slashes=False, methods=['GET', 'POST'])
+@app.route('/login', strict_slashes=False, methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         data = request.form
+        logging.debug(f"Login data: {data}")
+        
         response = requests.post(f'{API_BASE_URL}/login', data=data)
+        logging.debug(f"API response status: {response.status_code}")
+        logging.debug(f"API response data: {response.json() if response.status_code == 200 else response.text}")
+        
         if response.status_code == 200:
             user = response.json()
             session['user_id'] = user['id']
             session['username'] = user['username']
             flash('Logged in successfully', 'success')
-            session['show_popup'] = True
             return redirect(url_for('account'))
         else:
+            session['login_failed'] = True
             flash('Invalid username or password', 'error')
+            return redirect(url_for('login'))
     
     return render_template('login.html')
 

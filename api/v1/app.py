@@ -31,8 +31,9 @@ from flask_cors import CORS
 from flasgger import Swagger
 from flasgger.utils import swag_from
 from api.v1.views import app_views
-import logging
 from sqlalchemy.exc import IntegrityError
+import logging
+
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
@@ -42,6 +43,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
 
 app.register_blueprint(app_views)
+# app = Flask(__name__, template_folder='templates')
 
 @app.teardown_appcontext
 def close_db(error):
@@ -107,18 +109,23 @@ def register():
 def login():
     if request.method == 'POST':
         data = request.form
+        logging.debug(f"Login data: {data}")
+        
         if not data or 'username' not in data or 'password' not in data:
             flash('Invalid data', 'error')
             return redirect(url_for('login'))
-
-        user = User.query.filter_by(username=data['username']).first()
-        if user and check_password_hash(user.password, data['password']):
+        
+        users = storage.filter(User, username=data['username'])
+        user = users[0] if users else None
+        
+        if user and check_password_hash(user.password_hash, data['password']):
             session['user_id'] = user.id
             session['username'] = user.username
             flash('Login successful', 'success')
             return redirect(url_for('jopmed'))
         else:
-            flash('Invalid username or password', 'danger')
+            session['login_failed'] = True
+            flash('Invalid username or password', 'error')
             return redirect(url_for('login'))
     return render_template('login.html')
 

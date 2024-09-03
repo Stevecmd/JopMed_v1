@@ -3,9 +3,9 @@
 {% block title %}Login - JopMed{% endblock %}
 
 {% block content %}
-<div class="login-form">
-    <h2>Login</h2>
-    <form action="{{ url_for('login') }}" method="post">
+<div class="login-container">
+    <h1>Login</h1>
+    <form method="POST" action="{{ url_for('login') }}">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <label for="password">Password:</label>
@@ -13,4 +13,13 @@
         <button type="submit">Login</button>
     </form>
 </div>
+
+{% if session.get('login_failed') %}
+<script>
+    $(document).ready(function() {
+        alert('Invalid username or password. Please try again.');
+        {{ session.pop('login_failed') }}
+    });
+</script>
+{% endif %}
 {% endblock %}
