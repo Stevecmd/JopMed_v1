@@ -133,7 +133,7 @@ def login():
             session['user_id'] = user.id
             session['username'] = user.username
             flash('Logged in successfully', 'success')
-            return redirect(url_for('account'))
+            return redirect(url_for('jopmed'))
         else:
             flash('Invalid username or password', 'error')
             return redirect(url_for('login'))
