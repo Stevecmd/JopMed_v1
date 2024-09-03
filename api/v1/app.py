@@ -19,6 +19,7 @@ from models.products_tags import Product_Tags
 from models.product_images import Product_Images
 from models.shipping_methods import Shipping_Methods
 from models.shipping_information import Shipping_Information
+from models.service import Service
 from models.roles import Roles
 from models.reviews import Reviews
 from models.wishlist import Wishlist
@@ -479,11 +480,12 @@ def delete_comment(comment_id):
     return make_response(jsonify({}), 200)
 
 
-# Category Routes
+# Categories Routes
 @app.route('/categories', methods=['GET'])
 def get_categories():
     categories = storage.all(Categories).values()
-    return jsonify([category.to_dict() for category in categories])
+    categories_list = [category.to_dict() for category in categories]
+    return jsonify(categories_list)
 
 
 @app.route('/categories/<category_id>', methods=['GET'])
@@ -661,7 +663,19 @@ def update_prescription(prescription_id):
 @app.route('/products', methods=['GET'])
 def get_products():
     products = storage.all(Products).values()
-    return jsonify([product.to_dict() for product in products])
+    product_images = storage.all(Product_Images).values()
+    
+    # Create a dictionary to map product_id to image_url
+    product_images_dict = {image.product_id: image.image_url for image in product_images}
+    
+    # Combine product data with image URLs
+    products_list = []
+    for product in products:
+        product_dict = product.to_dict()
+        product_dict['image_url'] = product_images_dict.get(product.id, 'default-product-image.jpg')
+        products_list.append(product_dict)
+    
+    return jsonify(products_list)
 
 
 @app.route('/products/<product_id>', methods=['GET'])
@@ -1126,6 +1140,11 @@ def confirm_payment():
     payment.save()
     return make_response(jsonify(payment.to_dict()), 200)
 
+
+@app.route('/services', methods=['GET'])
+def get_services():
+    services = storage.all(Service).values()
+    return jsonify([service.to_dict() for service in services])
 
 # Wishlist Routes
 @app.route('/wishlist', methods=['GET'])

@@ -24,6 +24,8 @@ class Orders(BaseModel, Base):
        user = relationship("User", back_populates="orders")
        address = relationship("Addresses", back_populates="orders")
        order_items = relationship("Order_Items", back_populates="order")
+       services = relationship("Service", back_populates="order")
+
 
     else:
         user_id = ""

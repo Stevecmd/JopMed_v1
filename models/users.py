@@ -31,6 +31,8 @@ class User(BaseModel, Base):
             back_populates="user"
         )
         wishlist_items = relationship("Wishlist", back_populates="user")
+        services = relationship("Service", back_populates="user")
+
 
     else:
         username = ""

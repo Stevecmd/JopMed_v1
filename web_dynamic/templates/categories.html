@@ -5,6 +5,34 @@
 {% block content %}
 <div class="categories-content">
     <h1>Categories</h1>
-    <p>Categories page...</p>
+    <p>Explore our wide range of categories to find the products you need.</p>
+    <div id="categories-container" class="categories-container">
+        <!-- Categories will be dynamically inserted here -->
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('http://127.0.0.1:5000/categories')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const categoriesContainer = document.getElementById('categories-container');
+            data.forEach(category => {
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'category-card';
+                categoryCard.innerHTML = `
+                    <h2 class="category-name">${category.name}</h2>
+                    <p class="category-description">${category.description}</p>
+                `;
+                categoriesContainer.appendChild(categoryCard);
+            });
+        })
+        .catch(error => console.error('Error fetching categories:', error));
+});
+</script>
 {% endblock %}
