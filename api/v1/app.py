@@ -479,11 +479,12 @@ def delete_comment(comment_id):
     return make_response(jsonify({}), 200)
 
 
-# Category Routes
+# Categories Routes
 @app.route('/categories', methods=['GET'])
 def get_categories():
     categories = storage.all(Categories).values()
-    return jsonify([category.to_dict() for category in categories])
+    categories_list = [category.to_dict() for category in categories]
+    return jsonify(categories_list)
 
 
 @app.route('/categories/<category_id>', methods=['GET'])
