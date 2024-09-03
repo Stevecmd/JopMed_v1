@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}JopMed{% endblock %}</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/common.css') }}">
@@ -21,17 +22,17 @@
         <div class="wrapper site-header__wrapper">
             <div class="site-header__start">
                 <div class="logo">
-                    <a href="/"><img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" /></a>
+                    <a href="{{ url_for('jopmed') }}"><img src="{{ url_for('static', filename='images/jopmed-logo.svg') }}" alt="JopMed Logo" /></a>
                 </div>
-                <a href="#" class="brand">JopMed Supplies</a>
+                <a href="{{ url_for('jopmed') }}" class="brand">JopMed Supplies</a>
             </div>
             <div class="site-header__middle">
                 <nav class="nav">
                     <ul class="nav__wrapper">
-                        <li class="nav__item"><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
-                        <li class="nav__item"><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
-                        <li class="nav__item"><a href="/services" class="{% if request.path == '/services' %}active{% endif %}">Services</a></li>
-                        <li class="nav__item"><a href="/products" class="{% if request.path == '/products' %}active{% endif %}">Products</a></li>
+                        <li class="nav__item"><a href="{{ url_for('jopmed') }}" class="{% if request.path == url_for('jopmed') %}active{% endif %}">Home</a></li>
+                        <li class="nav__item"><a href="{{ url_for('about') }}" class="{% if request.path == url_for('about') %}active{% endif %}">About</a></li>
+                        <li class="nav__item"><a href="{{ url_for('services') }}" class="{% if request.path == url_for('services') %}active{% endif %}">Services</a></li>
+                        <li class="nav__item"><a href="{{ url_for('products') }}" class="{% if request.path == url_for('products') %}active{% endif %}">Products</a></li>
                     </ul>
                 </nav>
             </div>
@@ -40,20 +41,37 @@
                     Menu
                 </button>
                 <div class="dropdown-menu" id="dropdown-menu">
-                    <button class="nav__toggle" id="sign-in-button" aria-expanded="false" type="button">
-                        Sign In
-                    </button>
-                    <button class="nav__toggle" id="register-button" aria-expanded="false" type="button">
-                        Register
-                    </button>
-                    <button class="nav__toggle" id="sign-out-button" aria-expanded="false" type="button" style="display: none;">
-                        Sign Out
-                    </button>
+                    <ul>
+                        {% if session.get('user_id') %}
+                            <li><a href="{{ url_for('account') }}">Account</a></li>
+                            <li>
+                                <form action="{{ url_for('logout') }}" method="post" id="logout-form">
+                                    <a href="#" onclick="document.getElementById('logout-form').submit(); return false;">Logout</a>
+                                </form>
+                            </li>
+                            <li>Welcome, {{ session.get('username') }}</li>
+                        {% else %}
+                            <li><a href="{{ url_for('login') }}">Login</a></li>
+                            <li><a href="{{ url_for('register') }}">Register</a></li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
         </div>
     </header>
     <!-- Header End -->
+
+    <!-- Flash Messages Start -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    <!-- Flash Messages End -->
 
     <main>
         {% block content %}{% endblock %}
@@ -63,11 +81,11 @@
         <p>JopMed Online Store</p>
         <nav class="footer-nav">
             <ul class="footer-nav__wrapper">
-                <li class="nav__item"><a href="/categories">Categories</a></li>
-                <li class="nav__item"><a href="/contact-us">Contact</a></li>
-                <li class="nav__item"><a href="/account">Account</a></li>
-                <li class="nav__item"><a href="/shipping-information">Shipping Information</a></li>
-                <li class="nav__item"><a href="#">Admin</a></li>
+                <li class="nav__item"><a href="{{ url_for('categories') }}">Categories</a></li>
+                <li class="nav__item"><a href="{{ url_for('contact_us') }}">Contact</a></li>
+                <li class="nav__item"><a href="{{ url_for('account') }}">Account</a></li>
+                <li class="nav__item"><a href="{{ url_for('shipping_information') }}">Shipping Information</a></li>
+                <li class="nav__item"><a href="{{ url_for('admin') }}">Admin</a></li>
             </ul>
         </nav>
     </footer>

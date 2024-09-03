@@ -7,7 +7,7 @@ from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, DateTime, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship
-import bcrypt
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 
@@ -18,7 +18,7 @@ class User(BaseModel, Base):
         id = Column(Integer, primary_key=True, autoincrement=True)
         username = Column(String(64), nullable=False, unique=True)
         email = Column(String(120), nullable=False, unique=True)
-        password = Column(String(128), nullable=False)
+        password_hash = Column(String(512), nullable=False)
         first_name = Column(String(300), nullable=False)
         last_name = Column(String(300), nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -37,7 +37,7 @@ class User(BaseModel, Base):
     else:
         username = ""
         email = ""
-        password = ""
+        password_hash = ""
         first_name = ""
         last_name = ""
         comments = []
@@ -47,8 +47,21 @@ class User(BaseModel, Base):
         """initializes user"""
         super().__init__(*args, **kwargs)
 
-    def __setattr__(self, name, value):
-        """sets a password with bcrypt encryption"""
-        if name == "password":
-            value = bcrypt.hashpw(value.encode(), bcrypt.gensalt()).decode()
-        super().__setattr__(name, value)
+    def set_password(self, password):
+        """Hashes the password and stores it in the password_hash field
+
+        Args:
+            password (str): The plain text password
+        """
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Checks the hashed password against the stored hash
+
+        Args:
+            password (str): The plain text password
+
+        Returns:
+            bool: True if the password matches, False otherwise
+        """
+        return check_password_hash(self.password_hash, password)
