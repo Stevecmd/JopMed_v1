@@ -23,6 +23,7 @@ from models.shipping_information import Shipping_Information
 from models.service import Service
 from models.roles import Roles
 from models.reviews import Reviews
+from models.users_roles import User_Roles
 from models.wishlist import Wishlist
 from os import environ
 from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, jsonify
@@ -35,6 +36,8 @@ from flasgger.utils import swag_from
 from api.v1.views import app_views
 from sqlalchemy.exc import IntegrityError
 import logging
+import string
+import random
 
 
 app = Flask(__name__)
