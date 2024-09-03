@@ -23,7 +23,9 @@ from models.roles import Roles
 from models.reviews import Reviews
 from models.wishlist import Wishlist
 from os import environ
-from flask import Flask, request, render_template, make_response, jsonify
+from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, jsonify, session
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flasgger import Swagger
 from flasgger.utils import swag_from
@@ -33,6 +35,7 @@ from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+app.secret_key = 'jopmed_secret_key'
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
@@ -72,20 +75,73 @@ def jopmed():
     return "Home"
 
 
+# Authentication Routes
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Authentication required'}), 401
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        data = request.form
+        if not data or 'username' not in data or 'password' not in data:
+            flash('Invalid data', 'error')
+            return redirect(url_for('register'))
+
+        user = User(username=data['username'], email=data['email'],
+                    first_name=data['first_name'], last_name=data['last_name'])
+        user.set_password(data['password'])
+        storage.new(user)
+        storage.save()
+        flash('User registered successfully', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    user = storage.get(User, data['username'])
+    if user and user.check_password(data['password']):
+        session['user_id'] = user.id
+        return jsonify({'message': 'Login successful'}), 200
+    return jsonify({'error': 'Invalid username or password'}), 401
+
+
+@app.route('/logout', methods=['POST'])
+@login_required
+def logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    flash('Logged out successfully', 'success')
+    return jsonify({'message': 'Logged out successfully'}), 200,
+    return redirect(url_for('login'))
+
+
+@app.route('/account')
+@login_required
+def account():
+    user = storage.get(User, session['user_id'])
+    return render_template('account.html', user=user)
+
+
 # User Routes
 @app.route('/users', methods=['GET'])
+@login_required
 def get_users():
     users = storage.all(User).values()
     return jsonify([user.to_dict() for user in users])
 
 
-# @app.route('/users/<user_id>', methods=['GET'])
-# def get_user(user_id):
-#     user = storage.get(User, user_id)
-#     if not user:
-#         return not_found(404)
-#     return jsonify(user.to_dict())
 @app.route('/users/<user_id>', methods=['GET'])
+@login_required
 def get_user(user_id):
     try:
         user_id = int(user_id)
@@ -103,6 +159,7 @@ def get_user(user_id):
 
 
 @app.route('/users', methods=['POST'])
+@login_required
 def create_user():
     data = request.get_json()
     if not data:
@@ -113,6 +170,7 @@ def create_user():
 
 
 @app.route('/users/<user_id>', methods=['PUT'])
+@login_required
 def update_user(user_id):
     user = storage.get(User, user_id)
     if not user:
@@ -127,6 +185,7 @@ def update_user(user_id):
 
 
 @app.route('/users/<user_id>', methods=['DELETE'])
+@login_required
 def delete_user(user_id):
     try:
         user_id = int(user_id)
@@ -149,12 +208,14 @@ def delete_user(user_id):
 
 # Address Routes
 @app.route('/addresses', methods=['GET'])
+@login_required
 def get_addresses():
     addresses = storage.all(Addresses).values()
     return jsonify([address.to_dict() for address in addresses])
 
 
 @app.route('/addresses/<address_id>', methods=['GET'])
+@login_required
 def get_address(address_id):
     try:
         address_id = int(address_id)
@@ -173,6 +234,7 @@ def get_address(address_id):
 
 
 @app.route('/addresses', methods=['POST'])
+@login_required
 def create_address():
     data = request.get_json()
     if not data:
@@ -183,6 +245,7 @@ def create_address():
 
 
 @app.route('/addresses/<address_id>', methods=['PUT'])
+@login_required
 def update_address(address_id):
     try:
         address_id = int(address_id)
@@ -206,6 +269,7 @@ def update_address(address_id):
 
 
 @app.route('/addresses/<address_id>', methods=['DELETE'])
+@login_required
 def delete_address(address_id):
     try:
         address_id = int(address_id)
@@ -234,12 +298,14 @@ def delete_address(address_id):
 
 # Order Routes
 @app.route('/orders', methods=['GET'])
+@login_required
 def get_orders():
     orders = storage.all(Orders).values()
     return jsonify([order.to_dict() for order in orders])
 
 
 @app.route('/orders/<order_id>', methods=['GET'])
+@login_required
 def get_order(order_id):
     logging.info(f"Fetching order with ID {order_id}")
     order = storage.get(Orders, order_id)
@@ -251,6 +317,7 @@ def get_order(order_id):
 
 
 @app.route('/orders', methods=['POST'])
+@login_required
 def create_order():
     data = request.get_json()
     if not data:
@@ -261,6 +328,7 @@ def create_order():
 
 
 @app.route('/orders/<order_id>', methods=['PUT'])
+@login_required
 def update_order(order_id):
     order = storage.get(Orders, order_id)
     if not order:
@@ -275,6 +343,7 @@ def update_order(order_id):
 
 
 @app.route('/orders/<order_id>', methods=['DELETE'])
+@login_required
 def delete_order(order_id):
     try:
         logging.info(f"Attempting to delete order with ID: {order_id}")
@@ -446,6 +515,7 @@ def get_comment(comment_id):
 
 
 @app.route('/comments', methods=['POST'])
+@login_required
 def create_comment():
     data = request.get_json()
     if not data:
@@ -456,6 +526,7 @@ def create_comment():
 
 
 @app.route('/comments/<comment_id>', methods=['PUT'])
+@login_required
 def update_comment(comment_id):
     comment = storage.get(Comments, comment_id)
     if not comment:
@@ -470,6 +541,7 @@ def update_comment(comment_id):
 
 
 @app.route('/comments/<comment_id>', methods=['DELETE'])
+@login_required
 def delete_comment(comment_id):
     comment = storage.get(Comments, comment_id)
     if not comment:
@@ -556,6 +628,7 @@ def get_product_categories_by_product(product_id):
 
 
 @app.route('/product_categories', methods=['POST'])
+@login_required
 def create_product_category():
     data = request.get_json()
     if not data:
@@ -577,6 +650,7 @@ def create_product_category():
     '/product_categories/<product_id>/<category_id>',
     methods=['DELETE']
 )
+@login_required
 def delete_product_category(product_id, category_id):
     pc = storage.get(Product_Categories, (product_id, category_id))
     if not pc:
@@ -590,6 +664,7 @@ def delete_product_category(product_id, category_id):
 
 # Prescriptions Routes!
 @app.route('/prescriptions', methods=['GET'])
+@login_required
 def get_prescriptions():
     """Retrieve all prescriptions"""
     prescriptions = storage.all(Prescriptions).values()
@@ -597,6 +672,7 @@ def get_prescriptions():
 
 
 @app.route('/prescriptions/<prescription_id>', methods=['GET'])
+@login_required
 def get_prescription(prescription_id):
     """Retrieve a specific prescription by ID"""
     prescription = storage.get(Prescriptions, prescription_id)
@@ -606,6 +682,7 @@ def get_prescription(prescription_id):
 
 
 @app.route('/prescriptions', methods=['POST'])
+@login_required
 def create_prescription():
     data = request.get_json()
     if not data:
@@ -622,6 +699,7 @@ def create_prescription():
 
 
 @app.route('/prescriptions/<prescription_id>', methods=['DELETE'])
+@login_required
 def delete_prescription(prescription_id):
     prescription = storage.get(Prescriptions, prescription_id)
     if not prescription:
@@ -633,6 +711,7 @@ def delete_prescription(prescription_id):
 
 
 @app.route('/prescriptions/<prescription_id>', methods=['PUT'])
+@login_required
 def update_prescription(prescription_id):
     """Update a prescription by ID"""
     logging.debug(f"Attempting to update prescription with ID: {prescription_id}")
@@ -673,6 +752,7 @@ def get_product(product_id):
 
 
 @app.route('/products', methods=['POST'])
+@login_required
 def create_product():
     data = request.get_json()
     if not data:
@@ -688,6 +768,7 @@ def create_product():
 
 
 @app.route('/products/<product_id>', methods=['PUT'])
+@login_required
 def update_product(product_id):
     product = storage.get(Products, product_id)
     if not product:
@@ -703,6 +784,7 @@ def update_product(product_id):
 
 
 @app.route('/products/<product_id>', methods=['DELETE'])
+@login_required
 def delete_product(product_id):
     product = storage.get(Products, product_id)
     if not product:
@@ -728,6 +810,7 @@ def get_product_tags_by_product(product_id):
 
 
 @app.route('/product_tags', methods=['POST'])
+@login_required
 def create_product_tag():
     data = request.get_json()
     if not data:
@@ -742,6 +825,7 @@ def create_product_tag():
 
 
 @app.route('/product_tags/<product_id>/<tag_id>', methods=['DELETE'])
+@login_required
 def delete_product_tag(product_id, tag_id):
     pt = storage.get(Product_Tags, (product_id, tag_id))
     if not pt:
@@ -764,6 +848,7 @@ def get_product_images():
 
 
 @app.route('/product_images/<product_id>', methods=['GET'])
+@login_required
 def get_product_images_by_product(product_id):
     logging.info(f"Fetching product images for product ID: {product_id}")
     product_images = storage.all(Product_Images).values()
@@ -801,6 +886,7 @@ def create_product_image():
 
 
 @app.route('/product_images/<image_id>', methods=['DELETE'])
+@login_required
 def delete_product_image(image_id):
     pi = storage.get(Product_Images, image_id)
     if not pi:
@@ -816,12 +902,14 @@ def delete_product_image(image_id):
 
 # Shipping Methods Routes
 @app.route('/shipping_methods', methods=['GET'])
+@login_required
 def get_shipping_methods():
     shipping_methods = storage.all(Shipping_Methods).values()
     return jsonify([method.to_dict() for method in shipping_methods])
 
 
 @app.route('/shipping_methods/<method_id>', methods=['GET'])
+@login_required
 def get_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
     if not method:
@@ -830,6 +918,7 @@ def get_shipping_method(method_id):
 
 
 @app.route('/shipping_methods', methods=['POST'])
+@login_required
 def create_shipping_method():
     data = request.get_json()
     if not data:
@@ -842,6 +931,7 @@ def create_shipping_method():
 
 
 @app.route('/shipping_methods/<method_id>', methods=['PUT'])
+@login_required
 def update_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
     if not method:
@@ -856,6 +946,7 @@ def update_shipping_method(method_id):
 
 
 @app.route('/shipping_methods/<method_id>', methods=['DELETE'])
+@login_required
 def delete_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
     if not method:
@@ -941,6 +1032,7 @@ def get_role(role_id):
 
 
 @app.route('/roles', methods=['POST'])
+@login_required
 def create_role():
     data = request.get_json()
     if not data:
@@ -953,6 +1045,7 @@ def create_role():
 
 
 @app.route('/roles/<int:role_id>', methods=['PUT'])
+@login_required
 def update_role(role_id):
     role = storage.get(Roles, role_id)
     if not role:
@@ -967,6 +1060,7 @@ def update_role(role_id):
 
 
 @app.route('/roles/<int:role_id>', methods=['DELETE'])
+@login_required
 def delete_role(role_id):
     role = storage.get(Roles, role_id)
     if not role:
@@ -995,6 +1089,7 @@ def get_review(review_id):
 
 # Create a Review:
 @app.route('/reviews', methods=['POST'])
+@login_required
 def create_review():
     data = request.get_json()
     if not data:
@@ -1015,6 +1110,7 @@ def create_review():
 
 # Update a Review:
 @app.route('/reviews/<review_id>', methods=['PUT'])
+@login_required
 def update_review(review_id):
     review = storage.get(Reviews, review_id)
     if not review:
@@ -1030,6 +1126,7 @@ def update_review(review_id):
 
 # Delete a Review:
 @app.route('/reviews/<review_id>', methods=['DELETE'])
+@login_required
 def delete_review(review_id):
     review = storage.get(Reviews, review_id)
     if not review:
@@ -1042,6 +1139,7 @@ def delete_review(review_id):
 # Payment Routes
 # Create a Payment
 @app.route('/payment', methods=['POST'])
+@login_required
 def initiate_payment():
     data = request.get_json()
     if not data:
@@ -1067,12 +1165,14 @@ def initiate_payment():
 
 # Read All Payments
 @app.route('/payments', methods=['GET'])
+@login_required
 def get_payments():
     payments = storage.all(Payments).values()
     return jsonify([payment.to_dict() for payment in payments])
 
 # Read a Single Payment
 @app.route('/payments/<payment_id>', methods=['GET'])
+@login_required
 def get_payment(payment_id):
     payment = storage.get(Payments, payment_id)
     if not payment:
@@ -1081,6 +1181,7 @@ def get_payment(payment_id):
 
 # Update a Payment
 @app.route('/payments/<payment_id>', methods=['PUT'])
+@login_required
 def update_payment(payment_id):
     payment = storage.get(Payments, payment_id)
     if not payment:
@@ -1099,6 +1200,7 @@ def update_payment(payment_id):
 
 # Delete a Payment
 @app.route('/payments/<payment_id>', methods=['DELETE'])
+@login_required
 def delete_payment(payment_id):
     payment = storage.get(Payments, payment_id)
     if not payment:
@@ -1110,6 +1212,7 @@ def delete_payment(payment_id):
 
 # Confirm a Payment
 @app.route('/payment/confirm', methods=['POST'])
+@login_required
 def confirm_payment():
     data = request.get_json()
     if not data:
@@ -1129,12 +1232,14 @@ def confirm_payment():
 
 # Wishlist Routes
 @app.route('/wishlist', methods=['GET'])
+@login_required
 def view_wishlist():
     """Fetch all wishlist items"""
     wishlists = storage.all(Wishlist).values()
     return jsonify([wishlist.to_dict() for wishlist in wishlists])
 
 @app.route('/wishlist', methods=['POST'])
+@login_required
 def add_to_wishlist():
     """Add a new item to the wishlist"""
     data = request.get_json()
@@ -1146,6 +1251,7 @@ def add_to_wishlist():
     return jsonify({'message': 'Item added to wishlist'}), 201
 
 @app.route('/wishlist', methods=['PUT'])
+@login_required
 def update_wishlist():
     """Update an item in the wishlist"""
     data = request.get_json()
@@ -1163,6 +1269,7 @@ def update_wishlist():
     return jsonify({'message': 'Item updated in wishlist'}), 200
 
 @app.route('/wishlist', methods=['DELETE'])
+@login_required
 def remove_from_wishlist():
     """Remove an item from the wishlist"""
     data = request.get_json()
