@@ -2,6 +2,8 @@ import os
 import requests
 from flask import Flask, render_template, session, redirect, url_for, flash
 from models import storage
+from models.users import User
+from werkzeug.security import check_password_hash, generate_password_hash
 import logging
 
 app = Flask(__name__)
@@ -112,53 +114,68 @@ def shipping_information():
 from flask import request
 
 @app.route('/login', strict_slashes=False, methods=['GET', 'POST'])
-@app.route('/login', strict_slashes=False, methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         data = request.form
         logging.debug(f"Login data: {data}")
         
-        response = requests.post(f'{API_BASE_URL}/login', data=data)
-        logging.debug(f"API response status: {response.status_code}")
-        logging.debug(f"API response data: {response.json() if response.status_code == 200 else response.text}")
+        if not data or 'username' not in data or 'password' not in data:
+            flash('Invalid data', 'error')
+            return redirect(url_for('login'))
         
-        if response.status_code == 200:
-            user = response.json()
-            session['user_id'] = user['id']
-            session['username'] = user['username']
+        users = storage.filter(User, username=data['username'])
+        user = users[0] if users else None
+        
+        if user and check_password_hash(user.password_hash, data['password']):
+            session['user_id'] = user.id
+            session['username'] = user.username
             flash('Logged in successfully', 'success')
             return redirect(url_for('account'))
         else:
-            session['login_failed'] = True
             flash('Invalid username or password', 'error')
             return redirect(url_for('login'))
     
     return render_template('login.html')
 
-@app.route('/log-out', strict_slashes=False, methods=['POST'])
-def log_out():
+@app.route('/logout', strict_slashes=False, methods=['POST'])
+def logout():
     session.pop('user_id', None)
     session.pop('username', None)
     flash('Logged out successfully', 'success')
-    return redirect(url_for('log_in'))
+    return redirect(url_for('login'))
 
 @app.route('/register', strict_slashes=False, methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         data = request.form.to_dict()
         
-        # Convert password to password_hash
-        password = data.pop('password', None)
-        if password:
-            # You could hash the password here, or let the API do it as in the API route above
-            data['password_hash'] = password
+        # Check if username already exists
+        if storage.filter(User, username=data['username']):
+            flash('Username already exists', 'error')
+            return redirect(url_for('register'))
+
+        # Check if email already exists
+        if storage.filter(User, email=data['email']):
+            flash('Email already exists', 'error')
+            return redirect(url_for('register'))
+
+        # Create new user
+        new_user = User(
+            username=data['username'],
+            email=data['email'],
+            first_name=data.get('first_name', ''),
+            last_name=data.get('last_name', '')
+        )
+        new_user.set_password(data['password'])
         
-        response = requests.post(f'{API_BASE_URL}/users', json=data)
-        if response.status_code == 201:
+        try:
+            storage.new(new_user)
+            storage.save()
             flash('User registered successfully', 'success')
             return redirect(url_for('login'))
-        else:
-            flash('Failed to register user', 'error')
+        except Exception as e:
+            flash(f'An error occurred during registration: {str(e)}', 'error')
+            return redirect(url_for('register'))
     
     return render_template('register.html')
 

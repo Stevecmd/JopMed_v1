@@ -18,7 +18,7 @@ class User(BaseModel, Base):
         id = Column(Integer, primary_key=True, autoincrement=True)
         username = Column(String(64), nullable=False, unique=True)
         email = Column(String(120), nullable=False, unique=True)
-        password_hash = Column(String(128), nullable=False)
+        password_hash = Column(String(512), nullable=False)
         first_name = Column(String(300), nullable=False)
         last_name = Column(String(300), nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -2,6 +2,7 @@
 """ Flask Application """
 
 from datetime import datetime
+from datetime import timedelta
 from models import storage
 from models.users import User
 from models.addresses import Addresses
@@ -24,7 +25,8 @@ from models.roles import Roles
 from models.reviews import Reviews
 from models.wishlist import Wishlist
 from os import environ
-from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, jsonify, session
+from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, jsonify
+from flask import flash
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
@@ -38,8 +40,11 @@ import logging
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.secret_key = 'jopmed_secret_key'
+# app.config['SESSION_COOKIE_SECURE'] = True  # Ensure HTTPS only
+# app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # Set session expiry
 
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 logging.basicConfig(level=logging.INFO)
 
 app.register_blueprint(app_views)
@@ -79,30 +84,93 @@ def jopmed():
     return render_template('index.html')
 
 
+@app.after_request
+def clear_flashes(response):
+    session.pop('_flashes', None)
+    return response
+
+
 # Authentication Routes
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('login', next=request.url))
+            return jsonify({'error': 'Authentication required'}), 401
         return f(*args, **kwargs)
     return decorated_function
+
+def role_required(role_name):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return jsonify({'error': 'Authentication required'}), 401
+            
+            user_id = session['user_id']
+            user = storage.get(User, user_id)
+            
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            # Get the role ID for the required role
+            role = storage.filter(Roles, name=role_name)
+            if not role:
+                return jsonify({'error': 'Role not found'}), 404
+            role_id = role[0].id
+            
+            # Check if the user has the required role
+            user_role = storage.filter(User_Roles, user_id=user_id, role_id=role_id)
+            if not user_role:
+                return jsonify({'error': 'Insufficient permissions'}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def get_current_user():
+    if 'user_id' in session:
+        return storage.get(User, session['user_id'])
+    return None
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        data = request.form
-        if not data or 'username' not in data or 'password' not in data:
-            flash('Invalid data', 'error')
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+        if not data or 'username' not in data or 'password' not in data or 'email' not in data:
+            flash('Invalid data. Please fill all required fields.', 'error')
             return redirect(url_for('register'))
 
-        user = User(username=data['username'], email=data['email'],
-                    first_name=data['first_name'], last_name=data['last_name'])
+        # Check if username already exists
+        if storage.get_by_username(User, data['username']):
+            flash('Username already exists', 'error')
+            return redirect(url_for('register'))
+
+        # Check if email already exists
+        if storage.get_by_email(User, data['email']):
+            flash('Email already exists', 'error')
+            return redirect(url_for('register'))
+
+        # Create new user
+        user = User(
+            username=data['username'],
+            email=data['email'],
+            first_name=data.get('first_name', ''),
+            last_name=data.get('last_name', '')
+        )
         user.set_password(data['password'])
-        storage.new(user)
-        storage.save()
-        flash('User registered successfully', 'success')
-        return redirect(url_for('login'))
+        
+        try:
+            storage.new(user)
+            storage.save()
+            flash('User registered successfully', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'An error occurred during registration: {str(e)}', 'error')
+            return redirect(url_for('register'))
+
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -124,26 +192,63 @@ def login():
             flash('Login successful', 'success')
             return redirect(url_for('jopmed'))
         else:
-            session['login_failed'] = True
             flash('Invalid username or password', 'error')
             return redirect(url_for('login'))
     return render_template('login.html')
 
-@app.route('/logout', methods=['POST'])
+
+@app.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
     session.pop('user_id', None)
     session.pop('username', None)
     flash('Logged out successfully', 'success')
-    return jsonify({'message': 'Logged out successfully'}), 200,
+    if request.method == 'POST':
+        return jsonify({'message': 'Logged out successfully'}), 200
     return redirect(url_for('login'))
 
 @app.route('/account')
 @login_required
 def account():
-    user = storage.get(User, session['user_id'])
+    user = get_current_user()
     return render_template('account.html', user=user)
 
+
+@app.route('/admin-only')
+@login_required
+@role_required('admin')
+def admin_only():
+    return jsonify({'message': 'Welcome, admin!'})
+
+def role_required(role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return jsonify({'error': 'Authentication required'}), 401
+            user = storage.get(User, session['user_id'])
+            if not user or user.role != role:
+                return jsonify({'error': 'Insufficient permissions'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    if not data or 'email' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+    
+    user = storage.get_by_email(User, data['email'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Generate a random password
+    new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    user.password_hash = generate_password_hash(new_password)
+    user.save()
+    
+    return jsonify({'message': 'Password reset', 'new_password': new_password}), 200
 
 # User Routes
 @app.route('/users', methods=['GET'])
@@ -1099,6 +1204,17 @@ def delete_role(role_id):
     role.delete()
     storage.save()
     return make_response(jsonify({}), 200)
+
+def role_required(role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = get_current_user()
+            if not user or user.role != role:
+                return jsonify({'error': 'Unauthorized'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 # Reviews Routes

@@ -44,7 +44,11 @@
                     <ul>
                         {% if session.get('user_id') %}
                             <li><a href="{{ url_for('account') }}">Account</a></li>
-                            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                            <li>
+                                <form action="{{ url_for('logout') }}" method="post" id="logout-form">
+                                    <a href="#" onclick="document.getElementById('logout-form').submit(); return false;">Logout</a>
+                                </form>
+                            </li>
                             <li>Welcome, {{ session.get('username') }}</li>
                         {% else %}
                             <li><a href="{{ url_for('login') }}">Login</a></li>
@@ -56,6 +60,18 @@
         </div>
     </header>
     <!-- Header End -->
+
+    <!-- Flash Messages Start -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    <!-- Flash Messages End -->
 
     <main>
         {% block content %}{% endblock %}
