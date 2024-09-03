@@ -25,7 +25,7 @@ from models.roles import Roles
 from models.shipping_information import Shipping_Information
 from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
-# from models.users_roles import User_Roles
+from models.wishlist import Wishlist
 from models.users import User
 from os import getenv
 from sqlalchemy import create_engine
@@ -44,7 +44,7 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Reviews": Reviews, "Roles": Roles,
            "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
-           "User": User}
+           "User": User, "Wishlist": Wishlist}
 
 
 class DBStorage:

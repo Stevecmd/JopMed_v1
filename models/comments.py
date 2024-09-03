@@ -21,7 +21,7 @@ class Comments(BaseModel, Base):
 
         # Define relationships
         product = relationship("Products", back_populates="comments")
-        user = relationship("Users", back_populates="comments")
+        user = relationship("User", back_populates="comments")
     else:
         product_id = ""
         user_id = ""
