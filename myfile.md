@@ -51,6 +51,9 @@ Run the cat command again with the updated root user credentials:
 - Run the app
 `JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_dev_db JOPMED_TYPE_STORAGE=db python3 -m web_dynamic.jopmed`
 
+- Run the API
+`JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_HOST=0.0.0.0 JOPMED_API_PORT=5000 python3 -m api.v1.app`
+
 0x05
 - Never Fail
 `python3 -m unittest discover tests 2>&1 | tail -1`

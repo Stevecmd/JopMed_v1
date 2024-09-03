@@ -6,5 +6,33 @@
 <div class="services-content">
     <h1>Our Services</h1>
     <p>We offer a wide range of services to meet your medical supply needs, including fast shipping, bulk orders, and more.</p>
+    <div id="services-container" class="services-container">
+        <!-- Services will be dynamically inserted here -->
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('http://127.0.0.1:5000/services')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const servicesContainer = document.getElementById('services-container');
+            data.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card';
+                serviceCard.innerHTML = `
+                    <h2 class="service-name">${service.name}</h2>
+                    <p class="service-description">${service.description}</p>
+                `;
+                servicesContainer.appendChild(serviceCard);
+            });
+        })
+        .catch(error => console.error('Error fetching services:', error));
+});
+</script>
 {% endblock %}

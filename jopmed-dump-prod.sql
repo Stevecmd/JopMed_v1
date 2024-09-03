@@ -254,8 +254,8 @@ CREATE TABLE product_images (
 
 -- Insert sample data into product_images table
 INSERT INTO product_images (product_id, image_url, created_at, updated_at) VALUES
-(1, 'http://example.com/images/paracetamol.jpg', NOW(), NOW()),
-(2, 'http://example.com/images/vitamin-c.jpg', NOW(), NOW());
+(1, 'https://media.istockphoto.com/id/1181471590/photo/generic-paracetamol-tablets.jpg?s=612x612&w=0&k=20&c=QPpWqC2DGJ1QZBj522dWb_P8xTJKsHogHAUf9NWMWvY=', NOW(), NOW()),
+(2, 'https://media.istockphoto.com/id/179664597/photo/three-ways-to-get-your-vitamin-c.jpg?s=2048x2048&w=is&k=20&c=lHog66JlWtmVtKbu-eYQm_jkzzVFDih-ECvzDMl6mtk=', NOW(), NOW());
   
 -- Orders Table
 DROP TABLE IF EXISTS orders;
@@ -546,6 +546,37 @@ CREATE TABLE doctors (
 INSERT INTO doctors (first_name, last_name, specialization, email, phone_number, created_at, updated_at) VALUES
 ('John', 'Smith', 'Cardiology', 'john.smith@example.com', '123-456-7890', NOW(), NOW()),
 ('Jane', 'Doe', 'Neurology', 'jane.doe@example.com', '098-765-4321', NOW(), NOW());
+
+
+-- Services Table
+DROP TABLE IF EXISTS services;
+
+CREATE TABLE services (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    user_id INT NOT NULL,
+    order_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+);
+
+-- Insert sample data into services table
+INSERT INTO services (name, description, price, user_id, order_id, created_at, updated_at)
+VALUES
+('Online Consultation', 'Consult with a doctor online', 50.00, 1, 1, NOW(), NOW()),
+('Home Delivery', 'Get your medicines delivered to your home', 10.00, 2, 2, NOW(), NOW()),
+('Lab Test', 'Get lab tests done at home', 100.00, 1, 1, NOW(), NOW()),
+('Prescription Renewal', 'Renew your prescription online', 20.00, 2, 2, NOW(), NOW()),
+('Medication Reminders', 'Receive reminders to take your medications', 5.00, 1, 1, NOW(), NOW()),
+('Health and Wellness Programs', 'Join health and wellness programs', 30.00, 2, 2, NOW(), NOW()),
+('Emergency Services', 'Access emergency medical services', 200.00, 1, 1, NOW(), NOW()),
+('Product Recommendations', 'Get personalized product recommendations', 0.00, 2, 2, NOW(), NOW());
+
 
 -- Wishlist Table
 DROP TABLE IF EXISTS wishlist;
