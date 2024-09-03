@@ -54,6 +54,10 @@ Run the cat command again with the updated root user credentials:
 - Run the API
 `JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_HOST=0.0.0.0 JOPMED_API_PORT=5000 python3 -m api.v1.app`
 
+Running both the app and API have been simplified, run them by running: `./start_services.sh`
+Ports: - `Frontend: 3000`
+       - `API: 5000`
+
 0x05
 - Never Fail
 `python3 -m unittest discover tests 2>&1 | tail -1`
@@ -841,8 +845,6 @@ curl -X GET http://127.0.0.1:5000/shipping_methods/1
 }
 
 ```
-
-
 
 
 - Not found

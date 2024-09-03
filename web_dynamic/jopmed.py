@@ -25,15 +25,18 @@ def about():
 @app.route('/account', strict_slashes=False)
 def account():
     if 'user_id' not in session:
+        flash('Please log in to view your account', 'error')
         return redirect(url_for('login'))
     
     user_id = session['user_id']
-    response = requests.get(f'{API_BASE_URL}/users/{user_id}')
-    if response.status_code == 200:
+    try:
+        response = requests.get(f'{API_BASE_URL}/users/{user_id}', timeout=5)
+        response.raise_for_status()  # This will raise an exception for HTTP errors
         user = response.json()
         return render_template('account.html', user=user)
-    else:
-        flash('Failed to fetch account details', 'error')
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch account details: {str(e)}")
+        flash(f'Failed to fetch account details: {str(e)}', 'error')
         return redirect(url_for('login'))
 
 @app.route('/cart', strict_slashes=False)
