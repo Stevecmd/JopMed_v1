@@ -22,6 +22,7 @@ from models.products import Products
 from models.product_images import Product_Images
 from models.reviews import Reviews
 from models.roles import Roles
+from models.service import Service
 from models.shipping_information import Shipping_Information
 from models.shipping_methods import Shipping_Methods
 from models.tags import Tags
@@ -41,7 +42,7 @@ classes = {"Addresses": Addresses, "BaseModel": BaseModel,
            "Product_Categories": Product_Categories,
            "Product_Tags": Product_Tags, "Products": Products,
            "Product_Images": Product_Images,
-           "Reviews": Reviews, "Roles": Roles,
+           "Reviews": Reviews, "Roles": Roles, "Service": Service,
            "Shipping_Information": Shipping_Information,
            "Shipping_Methods": Shipping_Methods, "Tags": Tags,
            "User": User, "Wishlist": Wishlist}

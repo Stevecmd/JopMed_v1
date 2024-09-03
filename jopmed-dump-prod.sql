@@ -547,6 +547,37 @@ INSERT INTO doctors (first_name, last_name, specialization, email, phone_number,
 ('John', 'Smith', 'Cardiology', 'john.smith@example.com', '123-456-7890', NOW(), NOW()),
 ('Jane', 'Doe', 'Neurology', 'jane.doe@example.com', '098-765-4321', NOW(), NOW());
 
+
+-- Services Table
+DROP TABLE IF EXISTS services;
+
+CREATE TABLE services (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    user_id INT NOT NULL,
+    order_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+);
+
+-- Insert sample data into services table
+INSERT INTO services (name, description, price, user_id, order_id, created_at, updated_at)
+VALUES
+('Online Consultation', 'Consult with a doctor online', 50.00, 1, 1, NOW(), NOW()),
+('Home Delivery', 'Get your medicines delivered to your home', 10.00, 2, 2, NOW(), NOW()),
+('Lab Test', 'Get lab tests done at home', 100.00, 1, 1, NOW(), NOW()),
+('Prescription Renewal', 'Renew your prescription online', 20.00, 2, 2, NOW(), NOW()),
+('Medication Reminders', 'Receive reminders to take your medications', 5.00, 1, 1, NOW(), NOW()),
+('Health and Wellness Programs', 'Join health and wellness programs', 30.00, 2, 2, NOW(), NOW()),
+('Emergency Services', 'Access emergency medical services', 200.00, 1, 1, NOW(), NOW()),
+('Product Recommendations', 'Get personalized product recommendations', 0.00, 2, 2, NOW(), NOW());
+
+
 -- Wishlist Table
 DROP TABLE IF EXISTS wishlist;
 

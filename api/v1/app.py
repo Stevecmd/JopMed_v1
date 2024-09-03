@@ -19,6 +19,7 @@ from models.products_tags import Product_Tags
 from models.product_images import Product_Images
 from models.shipping_methods import Shipping_Methods
 from models.shipping_information import Shipping_Information
+from models.service import Service
 from models.roles import Roles
 from models.reviews import Reviews
 from models.wishlist import Wishlist
@@ -1139,6 +1140,11 @@ def confirm_payment():
     payment.save()
     return make_response(jsonify(payment.to_dict()), 200)
 
+
+@app.route('/services', methods=['GET'])
+def get_services():
+    services = storage.all(Service).values()
+    return jsonify([service.to_dict() for service in services])
 
 # Wishlist Routes
 @app.route('/wishlist', methods=['GET'])
