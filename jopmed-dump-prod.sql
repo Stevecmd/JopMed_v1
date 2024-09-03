@@ -558,6 +558,7 @@ CREATE TABLE services (
     price DECIMAL(10, 2) NOT NULL,
     user_id INT NOT NULL,
     order_id INT NOT NULL,
+    image_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -566,16 +567,16 @@ CREATE TABLE services (
 );
 
 -- Insert sample data into services table
-INSERT INTO services (name, description, price, user_id, order_id, created_at, updated_at)
+INSERT INTO services (name, description, price, user_id, order_id, image_url, created_at, updated_at)
 VALUES
-('Online Consultation', 'Consult with a doctor online', 50.00, 1, 1, NOW(), NOW()),
-('Home Delivery', 'Get your medicines delivered to your home', 10.00, 2, 2, NOW(), NOW()),
-('Lab Test', 'Get lab tests done at home', 100.00, 1, 1, NOW(), NOW()),
-('Prescription Renewal', 'Renew your prescription online', 20.00, 2, 2, NOW(), NOW()),
-('Medication Reminders', 'Receive reminders to take your medications', 5.00, 1, 1, NOW(), NOW()),
-('Health and Wellness Programs', 'Join health and wellness programs', 30.00, 2, 2, NOW(), NOW()),
-('Emergency Services', 'Access emergency medical services', 200.00, 1, 1, NOW(), NOW()),
-('Product Recommendations', 'Get personalized product recommendations', 0.00, 2, 2, NOW(), NOW());
+('Online Consultation', 'Consult with a doctor online', 50.00, 1, 1, 'https://images.pexels.com/photos/6098057/pexels-photo-6098057.jpeg', NOW(), NOW()),
+('Home Delivery', 'Get your medicines delivered to your home', 10.00, 2, 2, 'https://images.pexels.com/photos/4392030/pexels-photo-4392030.jpeg', NOW(), NOW()),
+('Lab Test', 'Get lab tests done at home', 100.00, 1, 1, 'https://images.pexels.com/photos/263194/pexels-photo-263194.jpeg', NOW(), NOW()),
+('Prescription Renewal', 'Renew your prescription online', 20.00, 2, 2, 'https://images.pexels.com/photos/3683051/pexels-photo-3683051.jpeg', NOW(), NOW()),
+('Medication Reminders', 'Receive reminders to take your medications', 5.00, 1, 1, 'https://images.pexels.com/photos/7723583/pexels-photo-7723583.jpeg', NOW(), NOW()),
+('Health and Wellness Programs', 'Join health and wellness programs', 30.00, 2, 2, 'https://images.pexels.com/photos/5452284/pexels-photo-5452284.jpeg', NOW(), NOW()),
+('Emergency Services', 'Access emergency medical services', 200.00, 1, 1, 'https://images.pexels.com/photos/27088312/pexels-photo-27088312/free-photo-of-navy-trainee-standing-by-a-helicopter.jpeg', NOW(), NOW()),
+('Product Recommendations', 'Get personalized product recommendations', 0.00, 2, 2, 'https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg', NOW(), NOW());
 
 
 -- Wishlist Table

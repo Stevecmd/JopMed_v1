@@ -23,6 +23,7 @@ class Service(BaseModel, Base):
         price = Column(DECIMAL(10, 2), nullable=False)
         user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
         order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
+        image_url = Column(String(255), nullable=True)
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -43,6 +44,7 @@ class Service(BaseModel, Base):
             'price': float(self.price),
             'user_id': self.user_id,
             'order_id': self.order_id,
+            'image_url': self.image_url,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

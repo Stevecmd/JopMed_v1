@@ -1385,6 +1385,49 @@ def get_services():
     services = storage.all(Service).values()
     return jsonify([service.to_dict() for service in services])
 
+@app.route('/services/<service_id>', methods=['GET'])
+def get_service(service_id):
+    service = storage.get(Service, service_id)
+    if not service:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    return jsonify(service.to_dict())
+
+@app.route('/services', methods=['POST'])
+def create_service():
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+    required_fields = ['name', 'description', 'price', 'user_id', 'order_id']
+    for field in required_fields:
+        if field not in data:
+            return make_response(jsonify({'error': f'Missing {field}'}), 400)
+    new_service = Service(**data)
+    new_service.save()
+    return make_response(jsonify(new_service.to_dict()), 201)
+
+@app.route('/services/<service_id>', methods=['PUT'])
+def update_service(service_id):
+    service = storage.get(Service, service_id)
+    if not service:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    data = request.get_json()
+    if not data:
+        return make_response(jsonify({'error': 'Not a JSON'}), 400)
+    for key, value in data.items():
+        if key not in ['id', 'created_at', 'updated_at']:
+            setattr(service, key, value)
+    service.save()
+    return jsonify(service.to_dict())
+
+@app.route('/services/<service_id>', methods=['DELETE'])
+def delete_service(service_id):
+    service = storage.get(Service, service_id)
+    if not service:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    service.delete()
+    storage.save()
+    return make_response(jsonify({}), 200)
+
 # Wishlist Routes
 @app.route('/wishlist', methods=['GET'])
 # @login_required
