@@ -40,6 +40,7 @@ from sqlalchemy.exc import IntegrityError
 import logging
 import string
 import random
+import requests
 
 
 app = Flask(__name__)
@@ -51,6 +52,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # Set session expi
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 app.register_blueprint(app_views)
 
@@ -80,6 +82,14 @@ app.config['SWAGGER'] = {
 }
 
 Swagger(app)
+
+
+@app.before_request
+def log_request_info():
+    logging.debug('Headers: %s', request.headers)
+    logging.debug('Body: %s', request.get_data())
+    logging.debug('Session: %s', session)
+
 
 @app.route('/', strict_slashes=False)
 @app.route('/jopmed-home', strict_slashes=False)
@@ -869,28 +879,7 @@ def update_prescription(prescription_id):
 @app.route('/products', methods=['GET'])
 def get_products():
     products = storage.all(Products).values()
-    product_images = storage.all(Product_Images).values()
-    
-    # Debugging output
-    print(f"Number of products: {len(products)}")
-    print(f"Number of product images: {len(product_images)}")
-    
-    # Create a dictionary to map product_id to image_url
-    product_images_dict = {image.product_id: image.image_url for image in product_images}
-    
-    # Combine product data with image URLs, comment count, and average rating
-    products_list = []
-    for product in products:
-        product_dict = product.to_dict()
-        product_dict['image_url'] = product_images_dict.get(product.id, 'default-product-image.jpg')
-        product_dict['comment_count'] = len(product.comments)
-        product_dict['average_rating'] = calculate_average_rating(product.id)
-        products_list.append(product_dict)
-    
-    # Debugging output
-    print(f"First product in list: {products_list[0] if products_list else 'No products'}")
-    
-    return jsonify(products_list)
+    return jsonify([product.to_dict(include_image=True) for product in products])
 
 
 @app.route('/products/<product_id>', methods=['GET'])
@@ -1658,17 +1647,28 @@ def remove_from_cart():
 def get_user_ratings():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
-
-    user_id = session['user_id']
-    user_ratings = storage.filter(Reviews, user_id=user_id)
-    # ratings = [{'product_id': rating.product_id, 'rating': rating.rating} for rating in user_ratings]
-    ratings = {str(rating.product_id): rating.rating for rating in user_ratings}
     
-    return jsonify(ratings)
+    user_id = session['user_id']
+    try:
+        # Fetch user ratings directly from the database
+        user_ratings = storage.filter(Reviews, user_id=user_id)
+        
+        # Convert the ratings to a dictionary format
+        ratings_dict = {str(rating.product_id): rating.rating for rating in user_ratings}
+        
+        return jsonify(ratings_dict), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching user ratings: {str(e)}")
+        return jsonify({'error': 'Failed to fetch user ratings'}), 500
 
 @app.route('/check_login', methods=['GET'])
 def check_login():
-    return jsonify({'logged_in': 'user_id' in session})
+    logged_in = 'user_id' in session
+    user_id = session.get('user_id')
+    username = session.get('username')
+    print(f"Session contents: {session}")
+    print(f"User logged in: {logged_in}, User ID: {user_id}, Username: {username}")
+    return jsonify({'logged_in': logged_in, 'user_id': user_id, 'username': username})
 
 if __name__ == "__main__":
     """ Main Function """
@@ -1679,3 +1679,4 @@ if __name__ == "__main__":
     if not port:
         port = '5000'
     app.run(host=host, port=port, threaded=True, debug=True)
+

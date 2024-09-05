@@ -1,13 +1,18 @@
 import os
 import requests
-from flask import Flask, render_template, session, redirect, url_for, flash
+from flask import Flask, render_template, session, redirect, url_for, flash, jsonify, request
 from models import storage
 from models.users import User
 from werkzeug.security import check_password_hash, generate_password_hash
 import logging
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = 'jopmed_secret_key'
+app.config['SESSION_COOKIE_SECURE'] = True  # for HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session to last for 7 days
 
 API_BASE_URL = 'http://localhost:5000'
 
@@ -39,9 +44,72 @@ def account():
         flash(f'Failed to fetch account details: {str(e)}', 'error')
         return redirect(url_for('login'))
 
-@app.route('/cart', strict_slashes=False)
-def cart():
-    return render_template('cart.html')
+@app.route('/api/cart', methods=['GET'])
+def get_cart():
+    # Initialize the cart if it doesn't exist in the session
+    if 'cart' not in session:
+        session['cart'] = {}
+
+    cart_items = []
+    for product_id, quantity in session['cart'].items():
+        # Fetch product details from the API
+        response = requests.get(f'{API_BASE_URL}/products/{product_id}')
+        if response.status_code == 200:
+            product = response.json()
+            cart_items.append({
+                "id": product['id'],
+                "name": product['name'],
+                "price": product['price'],
+                "quantity": quantity,
+                "total": product['price'] * quantity
+            })
+        else:
+            # Handle the case where the product is not found
+            flash(f'Product with ID {product_id} not found', 'error')
+
+    return jsonify(cart_items)
+
+@app.route('/api/cart/add', methods=['POST'])
+def add_to_cart():
+    data = request.json
+    product_id = str(data.get('product_id'))
+    quantity = data.get('quantity', 1)
+
+    if 'cart' not in session:
+        session['cart'] = {}
+
+    # Verify that the product exists before adding to cart
+    response = requests.get(f'{API_BASE_URL}/products/{product_id}')
+    if response.status_code != 200:
+        return jsonify({"success": False, "message": "Product not found"}), 404
+
+    if product_id in session['cart']:
+        session['cart'][product_id] += quantity
+    else:
+        session['cart'][product_id] = quantity
+
+    session.modified = True
+    return jsonify({"success": True, "message": "Product added to cart"})
+
+@app.route('/api/cart/update/<int:product_id>/<int:quantity>', methods=['POST'])
+def update_cart(product_id, quantity):
+    if 'cart' in session and str(product_id) in session['cart']:
+        if quantity > 0:
+            session['cart'][str(product_id)] = quantity
+        else:
+            del session['cart'][str(product_id)]
+        session.modified = True
+        return jsonify({"success": True, "message": "Cart updated"})
+    return jsonify({"success": False, "message": "Product not in cart"}), 400
+
+@app.route('/api/cart/remove/<int:product_id>', methods=['POST'])
+def remove_from_cart(product_id):
+    if 'cart' in session and str(product_id) in session['cart']:
+        del session['cart'][str(product_id)]
+        session.modified = True
+        return jsonify({"success": True, "message": "Product removed from cart"})
+    return jsonify({"success": False, "message": "Product not in cart"}), 400
+
 
 @app.route('/categories', strict_slashes=False)
 def categories():
@@ -72,12 +140,14 @@ def orders():
 
 @app.route('/products', strict_slashes=False)
 def products():
-    response = requests.get(f'{API_BASE_URL}/products')
-    if response.status_code == 200:
-        products = response.json()
+    try:
+        response = requests.get(f'{API_BASE_URL}/products', timeout=5)
+        response.raise_for_status()
+        products = response.json()  # Ensure to parse JSON, not text
         return render_template('products.html', products=products)
-    else:
-        flash('Failed to fetch products', 'error')
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch products: {str(e)}")
+        flash('Failed to fetch products. Please try again later.', 'error')
         return render_template('products.html', products=[])
 
 @app.route('/admin', strict_slashes=False)
@@ -96,13 +166,21 @@ def reviews():
 
 @app.route('/services', strict_slashes=False)
 def services():
-    response = requests.get(f'{API_BASE_URL}/services')
-    if response.status_code == 200:
+    try:
+        response = requests.get(f'{API_BASE_URL}/services', timeout=5)
+        response.raise_for_status()
         services = response.json()
-        return render_template('services.html', services=services)
-    else:
-        flash('Failed to fetch services', 'error')
-        return render_template('services.html', services=[])
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch services: {str(e)}")
+        flash('Failed to fetch services from the server. Showing local data.', 'warning')
+        # Provide some default or cached services data
+        services = [
+            {"id": 1, "name": "Service 1", "description": "Description 1"},
+            {"id": 2, "name": "Service 2", "description": "Description 2"},
+            # Add more default services as needed
+        ]
+    
+    return render_template('services.html', services=services)
 
 @app.route('/shipping-information', strict_slashes=False)
 def shipping_information():
@@ -132,6 +210,7 @@ def login():
         if user and check_password_hash(user.password_hash, data['password']):
             session['user_id'] = user.id
             session['username'] = user.username
+            session.permanent = True  # Make the session persistent
             flash('Logged in successfully', 'success')
             return redirect(url_for('jopmed'))
         else:
@@ -142,8 +221,7 @@ def login():
 
 @app.route('/logout', strict_slashes=False, methods=['POST'])
 def logout():
-    session.pop('user_id', None)
-    session.pop('username', None)
+    session.clear()
     flash('Logged out successfully', 'success')
     return redirect(url_for('login'))
 
@@ -186,6 +264,74 @@ def register():
 def teardown_db(exception):
     """ Remove the current SQLAlchemy Session """
     storage.close()
+
+@app.route('/cart', methods=['GET'])
+def cart_page():
+    return render_template('cart.html')
+
+@app.route('/check_login', methods=['GET'])
+def check_login():
+    logged_in = 'user_id' in session and 'username' in session
+    user_id = session.get('user_id')
+    username = session.get('username')
+    print(f"Session contents: {session}")
+    print(f"User logged in: {logged_in}, User ID: {user_id}, Username: {username}")
+    return jsonify({'logged_in': logged_in, 'user_id': user_id, 'username': username})
+
+@app.route('/api/protected_route', methods=['GET'])
+def protected_route():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    user_id = session['user_id']
+    
+    # Fetch user-specific data from your API
+    try:
+        # Get user details
+        user_response = requests.get(f'{API_BASE_URL}/users/{user_id}', timeout=5)
+        user_response.raise_for_status()
+        user_data = user_response.json()
+
+        # Get user's orders
+        orders_response = requests.get(f'{API_BASE_URL}/users/{user_id}/orders', timeout=5)
+        orders_response.raise_for_status()
+        orders_data = orders_response.json()
+
+        # Get user's reviews
+        reviews_response = requests.get(f'{API_BASE_URL}/users/{user_id}/reviews', timeout=5)
+        reviews_response.raise_for_status()
+        reviews_data = reviews_response.json()
+
+        # Combine all the data
+        protected_data = {
+            'user': user_data,
+            'orders': orders_data,
+            'reviews': reviews_data
+        }
+
+        return jsonify(protected_data), 200
+
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch protected data: {str(e)}")
+        return jsonify({'error': 'Failed to fetch protected data'}), 500
+
+@app.before_request
+def before_request():
+    print(f"Session before request: {session}")
+
+@app.route('/user/ratings', methods=['GET'])
+def get_user_ratings():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+    
+    user_id = session['user_id']
+    try:
+        response = requests.get(f'{API_BASE_URL}/user/ratings', cookies=request.cookies)
+        response.raise_for_status()
+        return response.json(), response.status_code
+    except requests.RequestException as e:
+        app.logger.error(f"Error fetching user ratings: {str(e)}")
+        return jsonify({'error': 'Failed to fetch user ratings'}), 500
 
 if __name__ == "__main__":
     print("Running Flask application...")

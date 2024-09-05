@@ -32,7 +32,7 @@ class User(BaseModel, Base):
         )
         wishlist_items = relationship("Wishlist", back_populates="user")
         services = relationship("Service", back_populates="user")
-
+        cart_items = relationship("ShoppingCart", back_populates="user")
 
     else:
         username = ""

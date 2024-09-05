@@ -318,7 +318,8 @@ CREATE TABLE reviews (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
 );
 
 -- Insert sample data into reviews table
@@ -560,6 +561,21 @@ CREATE TABLE wishlist (
 INSERT INTO wishlist (user_id, item_name, description, created_at, updated_at) VALUES
 (1, 'New Pain Relief Medication', 'A new type of pain relief medication that is more effective.', NOW(), NOW()),
 (2, 'Organic Vitamin C', 'Organic Vitamin C supplements for better immune support.', NOW(), NOW());
+
+-- Shopping Cart Table
+DROP TABLE IF EXISTS shopping_cart;
+
+CREATE TABLE shopping_cart (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
 
 -- Create Indexes
 CREATE INDEX idx_users_email ON users (email);
