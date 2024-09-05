@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """ Flask Application """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from datetime import timedelta
 from models import storage
 from models.users import User
@@ -20,6 +20,7 @@ from models.products_tags import Product_Tags
 from models.product_images import Product_Images
 from models.shipping_methods import Shipping_Methods
 from models.shipping_information import Shipping_Information
+from models.shopping_cart import ShoppingCart
 from models.service import Service
 from models.roles import Roles
 from models.reviews import Reviews
@@ -191,6 +192,7 @@ def login():
         
         if user and check_password_hash(user.password_hash, data['password']):
             session['user_id'] = user.id
+            logging.info(f"User {user.id} logged in successfully")
             session['username'] = user.username
             flash('Login successful', 'success')
             return redirect(url_for('jopmed'))
@@ -944,26 +946,53 @@ def delete_product(product_id):
 
 @app.route('/products/<product_id>/rate', methods=['POST'])
 def rate_product(product_id):
+    logging.info(f"Attempting to rate product {product_id}")
+    logging.info(f"Session contents: {session}")
+
+    # Check if product exists
+    if product_id == 'undefined':
+        return jsonify({'error': 'Invalid product ID'}), 400
+
+    # Check if user is logged in
     if 'user_id' not in session:
+        logging.warning("User not logged in")
         return jsonify({'error': 'User not logged in'}), 401
+
+    user_id = session['user_id']
+    logging.info(f"User ID from session: {user_id}")
 
     product = storage.get(Products, product_id)
     if not product:
+        logging.warning(f"Product {product_id} not found")
         return jsonify({'error': 'Product not found'}), 404
 
     data = request.get_json()
+    logging.info(f"Received data: {data}")
     if not data or 'rating' not in data:
+        logging.warning("Missing rating in request data")
         return jsonify({'error': 'Missing rating'}), 400
 
     rating = int(data['rating'])
     if rating < 1 or rating > 5:
+        logging.warning(f"Invalid rating: {rating}")
         return jsonify({'error': 'Invalid rating'}), 400
 
-    new_review = Reviews(user_id=session['user_id'], product_id=product_id, rating=rating)
-    storage.new(new_review)
+    # Check if the user has already rated this product
+    existing_review = storage.filter(Reviews, user_id=user_id, product_id=product_id)
+    if existing_review:
+        existing_review = existing_review[0]  # Get the first (and should be only) review
+        existing_review.rating = rating
+        existing_review.updated_at = datetime.now(timezone.utc)
+        logging.info(f"Updated existing review for user {user_id} on product {product_id}")
+    else:
+        new_review = Reviews(user_id=user_id, product_id=product_id, rating=rating)
+        storage.new(new_review)
+        logging.info(f"Created new review for user {user_id} on product {product_id}")
+    
     storage.save()
 
     new_average = calculate_average_rating(product_id)
+    logging.info(f"New average rating for product {product_id}: {new_average}")
 
     return jsonify({
         'success': True,
@@ -1563,6 +1592,83 @@ def remove_from_wishlist():
     item.delete()
     storage.save()
     return jsonify({'message': 'Item removed from wishlist'}), 200
+
+@app.route('/cart', methods=['GET'])
+# @login_required
+def get_cart():
+    user_id = session['user_id']
+    cart_items = storage.filter(ShoppingCart, user_id=user_id)
+    return jsonify([item.to_dict() for item in cart_items])
+
+@app.route('/cart/add', methods=['POST'])
+# @login_required
+def add_to_cart():
+    user_id = session['user_id']
+    data = request.get_json()
+    if not data or 'product_id' not in data or 'quantity' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    product = storage.get(Products, data['product_id'])
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    cart_item = storage.filter(ShoppingCart, user_id=user_id, product_id=data['product_id']).first()
+    if cart_item:
+        cart_item.quantity += data['quantity']
+    else:
+        cart_item = ShoppingCart(user_id=user_id, product_id=data['product_id'], quantity=data['quantity'])
+        storage.new(cart_item)
+    storage.save()
+    return jsonify({'success': True}), 200
+
+@app.route('/cart/update', methods=['PUT'])
+# @login_required
+def update_cart():
+    user_id = session['user_id']
+    data = request.get_json()
+    if not data or 'cart_item_id' not in data or 'quantity' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    cart_item = storage.get(ShoppingCart, data['cart_item_id'])
+    if not cart_item or cart_item.user_id != user_id:
+        return jsonify({'error': 'Cart item not found'}), 404
+
+    cart_item.quantity = data['quantity']
+    storage.save()
+    return jsonify({'success': True}), 200
+
+@app.route('/cart/remove', methods=['DELETE'])
+# @login_required
+def remove_from_cart():
+    user_id = session['user_id']
+    data = request.get_json()
+    if not data or 'cart_item_id' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    cart_item = storage.get(ShoppingCart, data['cart_item_id'])
+    if not cart_item or cart_item.user_id != user_id:
+        return jsonify({'error': 'Cart item not found'}), 404
+
+    storage.delete(cart_item)
+    storage.save()
+    return jsonify({'success': True}), 200
+
+# Star Ratings
+@app.route('/user/ratings', methods=['GET'])
+def get_user_ratings():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    user_id = session['user_id']
+    user_ratings = storage.filter(Reviews, user_id=user_id)
+    # ratings = [{'product_id': rating.product_id, 'rating': rating.rating} for rating in user_ratings]
+    ratings = {str(rating.product_id): rating.rating for rating in user_ratings}
+    
+    return jsonify(ratings)
+
+@app.route('/check_login', methods=['GET'])
+def check_login():
+    return jsonify({'logged_in': 'user_id' in session})
 
 if __name__ == "__main__":
     """ Main Function """
