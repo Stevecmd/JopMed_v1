@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - JopMed{% endblock %}
+
+{% block content %}
+<div class="checkout-container">
+    <h1>Checkout</h1>
+    <div id="order-summary">
+        <!-- Order summary will be dynamically inserted here -->
+    </div>
+    <div id="payment-method">
+        {% if user_has_payment_method %}
+            <h2>Payment Method</h2>
+            <p>Card ending in: {{ last_four_digits }}</p>
+            <button onclick="confirmPurchase()">Confirm Purchase</button>
+        {% else %}
+            <h2>No Payment Method Registered</h2>
+            <p>Please register a payment method to continue.</p>
+            <button onclick="registerPaymentMethod()">Register Payment Method</button>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function confirmPurchase() {
+        fetch('/api/purchase/confirm', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Purchase successful! Your receipt has been generated.');
+                window.location.href = data.receipt_url;
+            } else {
+                alert('Failed to process purchase. Please try again.');
+            }
+        })
+        .catch(error => console.error('Error confirming purchase:', error));
+    }
+
+    function registerPaymentMethod() {
+        window.location.href = '/register-payment-method';
+    }
+</script>
+{% endblock %}
