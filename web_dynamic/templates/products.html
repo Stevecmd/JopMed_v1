@@ -25,12 +25,66 @@
                 <p class="product-description">${product.description}</p>
                 <p class="product-price">$${parseFloat(product.price).toFixed(2)}</p>
                 <p class="product-stock">In stock: ${product.stock}</p>
-                
+                <div class="cart-controls">
+                    <button class="decrement-cart" data-product-id="${product.id}">-</button>
+                    <span class="cart-quantity" data-product-id="${product.id}">0</span>
+                    <button class="increment-cart" data-product-id="${product.id}">+</button>
+                </div>
             `;
             productsContainer.appendChild(productCard);
         });
 
-    });
+        document.querySelectorAll('.increment-cart, .decrement-cart').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const change = this.classList.contains('increment-cart') ? 1 : -1;
+                updateCart(productId, change);
+            });
+        });
 
+        function updateCart(productId, change) {
+            fetch('/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity_change: change
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateQuantityDisplay(productId, change);
+                } else {
+                    alert('Failed to update cart.');
+                }
+            })
+            .catch(error => console.error('Error updating cart:', error));
+        }
+
+        function updateQuantityDisplay(productId, change) {
+            const quantityElement = document.querySelector(`.cart-quantity[data-product-id="${productId}"]`);
+            if (quantityElement) {
+                let newQuantity = parseInt(quantityElement.textContent) + change;
+                newQuantity = Math.max(0, newQuantity);
+                quantityElement.textContent = newQuantity;
+            }
+        }
+
+        function initializeCartQuantities() {
+            fetch('/cart')
+            .then(response => response.json())
+            .then(cart => {
+                for (const item of cart) {
+                    updateQuantityDisplay(item.product_id, item.quantity);
+                }
+            })
+            .catch(error => console.error('Error fetching cart:', error));
+        }
+
+        initializeCartQuantities();
+    });
 </script>
 {% endblock %}

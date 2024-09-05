@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - JopMed{% endblock %}
+
+{% block content %}
+<div class="cart-container">
+    <h1>Your Shopping Cart</h1>
+    <div id="cart-items">
+        <!-- Cart items will be dynamically inserted here -->
+    </div>
+    <div id="cart-total">Total: $<span id="total-amount">0.00</span></div>
+    <button id="checkout-button">Proceed to Checkout</button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cartItemsContainer = document.getElementById('cart-items');
+        const totalAmountElement = document.getElementById('total-amount');
+
+        function loadCart() {
+            fetch('/api/cart')
+            .then(response => response.json())
+            .then(cart => {
+                cartItemsContainer.innerHTML = '';
+                let total = 0;
+                cart.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'cart-item';
+                    itemElement.innerHTML = `
+                        <img src="${item.image_url || '/static/images/default-product.jpg'}" alt="${item.product_name}" class="cart-item-image">
+                        <div class="cart-item-details">
+                            <h3>${item.product_name}</h3>
+                            <p>Price: $${item.product_price.toFixed(2)}</p>
+                            <p>Quantity: ${item.quantity}</p>
+                        </div>
+                        <button class="remove-item" data-product-id="${item.product_id}">Remove</button>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                    total += item.product_price * item.quantity;
+                });
+                totalAmountElement.textContent = total.toFixed(2);
+            })
+            .catch(error => console.error('Error loading cart:', error));
+        }
+
+        loadCart();
+
+        cartItemsContainer.addEventListener('click', function(event) {
+            if (event.target.classList.contains('remove-item')) {
+                const productId = event.target.getAttribute('data-product-id');
+                updateCart(productId, -1);
+            }
+        });
+
+        function updateCart(productId, change) {
+            fetch('/api/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity_change: change
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadCart();
+                } else {
+                    alert('Failed to update cart.');
+                }
+            })
+            .catch(error => console.error('Error updating cart:', error));
+        }
+    });
+</script>
+{% endblock %}

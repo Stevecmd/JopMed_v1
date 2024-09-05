@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/about.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/products.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/services.css') }}">
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='styles/cart.css') }}"> -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/cart.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/header.js') }}"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -36,6 +36,7 @@
                         <li class="nav__item"><a href="{{ url_for('about') }}" class="{% if request.path == url_for('about') %}active{% endif %}">About</a></li>
                         <li class="nav__item"><a href="{{ url_for('services') }}" class="{% if request.path == url_for('services') %}active{% endif %}">Services</a></li>
                         <li class="nav__item"><a href="{{ url_for('products') }}" class="{% if request.path == url_for('products') %}active{% endif %}">Products</a></li>
+                        <li class="nav__item"><a href="{{ url_for('cart') }}" class="{% if request.path == url_for('cart') %}active{% endif %}">Cart</a></li>
                     </ul>
                 </nav>
             </div>
@@ -61,7 +62,7 @@
                 </div>
                 <!-- Shopping cart icon -->
                 <div id="cart-icon">
-                    <a href="{{ url_for('cart_page') }}">
+                    <a href="{{ url_for('cart') }}">
                         <i class="fas fa-shopping-cart"></i>
                         <span id="cart-count">0</span>
                     </a>
