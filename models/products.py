@@ -17,6 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from models.shopping_cart import ShoppingCart
 
 
 class Products(BaseModel, Base):
@@ -50,6 +51,15 @@ class Products(BaseModel, Base):
             secondary="product_categories",
             back_populates="products"
         )
+        cart_items = relationship("ShoppingCart", back_populates="product")
+        product_images = relationship("Product_Images", back_populates="product")
+
+    def to_dict(self, include_image=False):
+        product_dict = super().to_dict()
+        if include_image:
+            main_image = self.product_images[0] if self.product_images else None
+            product_dict['image_url'] = main_image.image_url if main_image else None
+        return product_dict
 
     def __init__(self, *args, **kwargs):
         """initializes products"""

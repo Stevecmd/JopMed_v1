@@ -19,6 +19,8 @@ class Product_Images(BaseModel, Base):
         created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
         updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
+        product = relationship("Products", back_populates="product_images")
+
     else:
         product_id = ""
         image_url = ""
