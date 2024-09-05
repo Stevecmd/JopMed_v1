@@ -36,7 +36,7 @@
                         <li class="nav__item"><a href="{{ url_for('about') }}" class="{% if request.path == url_for('about') %}active{% endif %}">About</a></li>
                         <li class="nav__item"><a href="{{ url_for('services') }}" class="{% if request.path == url_for('services') %}active{% endif %}">Services</a></li>
                         <li class="nav__item"><a href="{{ url_for('products') }}" class="{% if request.path == url_for('products') %}active{% endif %}">Products</a></li>
-                        <li class="nav__item"><a href="{{ url_for('cart') }}" class="{% if request.path == url_for('cart') %}active{% endif %}">Cart</a></li>
+                        
                     </ul>
                 </nav>
             </div>
@@ -61,12 +61,12 @@
                     </ul>
                 </div>
                 <!-- Shopping cart icon -->
-                <div id="cart-icon">
-                    <a href="{{ url_for('cart') }}">
+                <!-- <div id="cart-icon">
+                    
                         <i class="fas fa-shopping-cart"></i>
                         <span id="cart-count">0</span>
                     </a>
-                </div>
+                </div> -->
                 <!-- Shopping cart icon end-->
             </div>
         </div>

@@ -1610,7 +1610,7 @@ def add_to_cart():
     storage.save()
     return jsonify({'success': True}), 200
 
-@app.route('/cart/update', methods=['PUT'])
+@app.route('/cart/update', methods=['POST', 'PUT'])
 # @login_required
 def update_cart():
     user_id = session['user_id']

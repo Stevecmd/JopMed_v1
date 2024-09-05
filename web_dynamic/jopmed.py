@@ -91,8 +91,36 @@ def add_to_cart():
     session.modified = True
     return jsonify({"success": True, "message": "Product added to cart"})
 
-@app.route('/api/cart/update/<int:product_id>/<int:quantity>', methods=['POST'])
-def update_cart(product_id, quantity):
+
+@app.route('/api/cart/update', methods=['POST'])
+def update_cart():
+    data = request.json
+    app.logger.debug(f"Received data for cart update: {data}")
+    product_id = str(data.get('product_id'))
+    quantity_change = data.get('quantity_change')
+
+    if not product_id or quantity_change is None:
+        app.logger.error("Invalid data received")
+        return jsonify({"error": "Invalid data"}), 400
+
+    app.logger.debug(f"Session before update: {session}")
+
+    if 'cart' not in session:
+        session['cart'] = {}
+
+    if product_id in session['cart']:
+        session['cart'][product_id] += quantity_change
+        if session['cart'][product_id] <= 0:
+            del session['cart'][product_id]
+    else:
+        session['cart'][product_id] = quantity_change
+
+    session.modified = True
+    app.logger.debug(f"Session after update: {session}")
+    return jsonify({"success": True, "message": "Cart updated"})
+
+@app.route('/api/cart/update/<int:product_id>/<int:quantity>', methods=['POST', 'PUT'])
+def update_cart_by_product_id(product_id, quantity):
     if 'cart' in session and str(product_id) in session['cart']:
         if quantity > 0:
             session['cart'][str(product_id)] = quantity
@@ -102,7 +130,7 @@ def update_cart(product_id, quantity):
         return jsonify({"success": True, "message": "Cart updated"})
     return jsonify({"success": False, "message": "Product not in cart"}), 400
 
-@app.route('/api/cart/remove/<int:product_id>', methods=['POST'])
+@app.route('/api/cart/remove/<int:product_id>', methods=['POST', 'PUT'])
 def remove_from_cart(product_id):
     if 'cart' in session and str(product_id) in session['cart']:
         del session['cart'][str(product_id)]
