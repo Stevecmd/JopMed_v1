@@ -869,15 +869,24 @@ def get_products():
     products = storage.all(Products).values()
     product_images = storage.all(Product_Images).values()
     
+    # Debugging output
+    print(f"Number of products: {len(products)}")
+    print(f"Number of product images: {len(product_images)}")
+    
     # Create a dictionary to map product_id to image_url
     product_images_dict = {image.product_id: image.image_url for image in product_images}
     
-    # Combine product data with image URLs
+    # Combine product data with image URLs, comment count, and average rating
     products_list = []
     for product in products:
         product_dict = product.to_dict()
         product_dict['image_url'] = product_images_dict.get(product.id, 'default-product-image.jpg')
+        product_dict['comment_count'] = len(product.comments)
+        product_dict['average_rating'] = calculate_average_rating(product.id)
         products_list.append(product_dict)
+    
+    # Debugging output
+    print(f"First product in list: {products_list[0] if products_list else 'No products'}")
     
     return jsonify(products_list)
 
@@ -931,6 +940,79 @@ def delete_product(product_id):
     product.delete()
     storage.save()
     return make_response(jsonify({}), 200)
+
+
+@app.route('/products/<product_id>/rate', methods=['POST'])
+def rate_product(product_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    product = storage.get(Products, product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    data = request.get_json()
+    if not data or 'rating' not in data:
+        return jsonify({'error': 'Missing rating'}), 400
+
+    rating = int(data['rating'])
+    if rating < 1 or rating > 5:
+        return jsonify({'error': 'Invalid rating'}), 400
+
+    new_review = Reviews(user_id=session['user_id'], product_id=product_id, rating=rating)
+    storage.new(new_review)
+    storage.save()
+
+    new_average = calculate_average_rating(product_id)
+
+    return jsonify({
+        'success': True,
+        'new_average': new_average
+    }), 201
+
+
+@app.route('/products/<product_id>/comments', methods=['GET'])
+def get_product_comments(product_id):
+    product = storage.get(Products, product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+    
+    comments = [comment.to_dict() for comment in product.comments]
+    return jsonify({
+        'product_name': product.name,
+        'comments': comments
+    })
+
+@app.route('/products/<product_id>/comments', methods=['POST'])
+def add_product_comment(product_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    product = storage.get(Products, product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    data = request.get_json()
+    if not data or 'content' not in data:
+        return jsonify({'error': 'Missing comment content'}), 400
+
+    new_comment = Comments(
+        user_id=session['user_id'],
+        product_id=product_id,
+        content=data['content']
+    )
+    storage.new(new_comment)
+    storage.save()
+
+    return jsonify(new_comment.to_dict()), 201
+
+
+def calculate_average_rating(product_id):
+    reviews = storage.filter(Reviews, product_id=product_id)
+    if not reviews:
+        return 0
+    total_rating = sum(review.rating for review in reviews)
+    return total_rating / len(reviews)
 
 
 # Product Tags Routes

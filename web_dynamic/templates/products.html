@@ -11,30 +11,156 @@
     </div>
 </div>
 
+<!-- Add this modal for comments -->
+<div id="comment-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modal-product-name"></h2>
+        <div id="comments-container"></div>
+        <form id="comment-form">
+            <textarea id="comment-text" required></textarea>
+            <button type="submit">Add Comment</button>
+        </form>
+    </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('http://127.0.0.1:5000/products')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
+    document.addEventListener('DOMContentLoaded', function() {
+        const productsContainer = document.getElementById('products-container');
+        const modal = document.getElementById('comment-modal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+        const commentForm = document.getElementById('comment-form');
+        let currentProductId;
+
+        fetch('http://127.0.0.1:5000/products')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                        <img src="${product.image_url || 'default-image.jpg'}" alt="${product.name}" class="product-image">
+                        <h2 class="product-name">${product.name}</h2>
+                        <p class="product-description">${product.description}</p>
+                        <p class="product-price">$${parseFloat(product.price).toFixed(2)}</p>
+                        <div class="product-footer">
+                            <div class="comment-section">
+                                <i class="fas fa-comment comment-icon" data-product-id="${product.id}"></i>
+                                <span class="comment-count">${product.comment_count || ''}</span>
+                            </div>
+                            <div class="rating-section">
+                                <div class="star-rating" data-product-id="${product.id}">
+                                    <input type="radio" id="star5-${product.id}" name="rating-${product.id}" value="5" /><label for="star5-${product.id}">☆</label>
+                                    <input type="radio" id="star4-${product.id}" name="rating-${product.id}" value="4" /><label for="star4-${product.id}">☆</label>
+                                    <input type="radio" id="star3-${product.id}" name="rating-${product.id}" value="3" /><label for="star3-${product.id}">☆</label>
+                                    <input type="radio" id="star2-${product.id}" name="rating-${product.id}" value="2" /><label for="star2-${product.id}">☆</label>
+                                    <input type="radio" id="star1-${product.id}" name="rating-${product.id}" value="1" /><label for="star1-${product.id}">☆</label>
+                                </div>
+                                <span class="average-rating">${product.average_rating ? product.average_rating.toFixed(1) : ''}</span>
+                            </div>
+                        </div>
+                    `;
+                    productsContainer.appendChild(productCard);
+
+                    // Add event listener for comment icon
+                    const commentIcon = productCard.querySelector('.comment-icon');
+                    commentIcon.addEventListener('click', function() {
+                        openCommentModal(this.dataset.productId);
+                    });
+
+                    // Add event listeners for star ratings
+                    const starRating = productCard.querySelector('.star-rating');
+                    starRating.addEventListener('change', function(e) {
+                        const rating = e.target.value;
+                        const productId = this.dataset.productId;
+                        submitRating(productId, rating);
+                    });
+                });
+            })
+            .catch(error => console.error('Error fetching products:', error));
+
+        function openCommentModal(productId) {
+            if (!isUserLoggedIn()) {
+                alert('Please log in to add comments.');
+                return;
             }
-            return response.json();
-        })
-        .then(data => {
-            const productsContainer = document.getElementById('products-container');
-            data.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'product-card';
-                productCard.innerHTML = `
-                    <img src="${product.image_url || 'default-image.jpg'}" alt="${product.name}" class="product-image">
-                    <h2 class="product-name">${product.name}</h2>
-                    <p class="product-description">${product.description}</p>
-                    <p class="product-price">$${parseFloat(product.price).toFixed(2)}</p>
-                `;
-                productsContainer.appendChild(productCard);
-            });
-        })
-        .catch(error => console.error('Error fetching products:', error));
-});
+            currentProductId = productId;
+            fetch(`http://127.0.0.1:5000/products/${productId}/comments`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('modal-product-name').textContent = data.product_name;
+                    const commentsContainer = document.getElementById('comments-container');
+                    commentsContainer.innerHTML = '';
+                    data.comments.forEach(comment => {
+                        const commentEl = document.createElement('div');
+                        commentEl.className = 'comment';
+                        commentEl.textContent = comment.content;
+                        commentsContainer.appendChild(commentEl);
+                    });
+                    modal.style.display = 'block';
+                })
+                .catch(error => console.error('Error fetching comments:', error));
+        }
+
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        commentForm.onsubmit = function(e) {
+            e.preventDefault();
+            const commentText = document.getElementById('comment-text').value;
+            fetch(`http://127.0.0.1:5000/products/${currentProductId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: commentText }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                openCommentModal(currentProductId);
+                document.getElementById('comment-text').value = '';
+            })
+            .catch(error => console.error('Error posting comment:', error));
+        }
+
+        function submitRating(productId, rating) {
+            if (!isUserLoggedIn()) {
+                alert('Please log in to rate products.');
+                return;
+            }
+
+            fetch(`http://127.0.0.1:5000/products/${productId}/rate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rating: rating }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const averageRatingSpan = document.querySelector(`.star-rating[data-product-id="${productId}"] + .average-rating`);
+                    averageRatingSpan.textContent = data.new_average.toFixed(1);
+                } else {
+                    alert('Failed to submit rating. Please try again.');
+                }
+            })
+            .catch(error => console.error('Error submitting rating:', error));
+        }
+
+        function isUserLoggedIn() {
+            // Implement your logic to check if the user is logged in
+            // This could involve checking a session cookie or a stored token
+            // Return true if logged in, false otherwise
+            return true; // Placeholder, replace with actual check
+        }
+    });
 </script>
-{% endblock %}
+    {% endblock %}
