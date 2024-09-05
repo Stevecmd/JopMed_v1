@@ -10,9 +10,10 @@ from models.orders import Orders
 from models.doctors import Doctors
 from models.comments import Comments
 from models.categories import Categories
-from models.orders import Orders
+
 from models.order_items import Order_Items
 from models.payments import Payments
+from models.payment_method import PaymentMethod
 from models.product_categories import Product_Categories
 from models.prescriptions import Prescriptions
 from models.products import Products
@@ -28,7 +29,7 @@ from models.users_roles import User_Roles
 from models.wishlist import Wishlist
 import os
 from os import environ
-from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, jsonify
+from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, send_file, request, jsonify
 from flask import flash
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -40,7 +41,8 @@ from sqlalchemy.exc import IntegrityError
 import logging
 import string
 import random
-import requests
+from io import BytesIO
+from reportlab.pdfgen import canvas
 
 
 app = Flask(__name__)
@@ -1660,6 +1662,102 @@ def get_user_ratings():
     except Exception as e:
         app.logger.error(f"Error fetching user ratings: {str(e)}")
         return jsonify({'error': 'Failed to fetch user ratings'}), 500
+
+
+@app.route('/checkout')
+def checkout():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    cart_items = storage.filter(ShoppingCart, user_id=user_id)
+    payment_method = storage.filter(PaymentMethod, user_id=user_id).first()
+    
+    return render_template('checkout.html', 
+                           user_has_payment_method=bool(payment_method),
+                           last_four_digits=payment_method.last_four if payment_method else None)
+
+@app.route('/register-payment-method', methods=['GET', 'POST'])
+def register_payment_method():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        card_number = request.form['card_number']
+        last_four = card_number[-4:]
+        
+        # Save simulated payment method to database
+        new_payment_method = PaymentMethod(user_id=session['user_id'], 
+                                           last_four=last_four)
+        storage.new(new_payment_method)
+        storage.save()
+        
+        return redirect(url_for('checkout'))
+    
+    return render_template('register_payment_method.html')
+
+@app.route('/api/purchase/confirm', methods=['POST'])
+def confirm_purchase():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+    
+    user_id = session['user_id']
+    cart_items = storage.filter(ShoppingCart, user_id=user_id)
+    payment_method = storage.filter(PaymentMethod, user_id=user_id).first()
+    
+    if not payment_method:
+        return jsonify({'error': 'No payment method registered'}), 400
+    
+    # Calculate total amount
+    total_amount = sum(item.product.price * item.quantity for item in cart_items)
+    
+    # Simulate payment processing (always successful in this MVP)
+    payment_successful = True
+    
+    if payment_successful:
+        # Create order
+        new_order = Orders(
+            user_id=user_id,
+            address_id=1,  # You might want to get this from the user's default address or session
+            status='pending',
+            payment_method='credit_card',  # Adjust based on actual payment method used
+            total_amount=total_amount
+        )
+        storage.new(new_order)
+        
+        # Clear cart
+        for item in cart_items:
+            storage.delete(item)
+        
+        storage.save()
+        
+        # Generate receipt
+        receipt_url = url_for('generate_receipt', order_id=new_order.id)
+        
+        return jsonify({'success': True, 'receipt_url': receipt_url}), 200
+    else:
+        return jsonify({'error': 'Payment processing failed'}), 400
+
+@app.route('/receipt/<int:order_id>')
+def generate_receipt(order_id):
+    order = storage.get(Orders, order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+    
+    # Add receipt content
+    p.drawString(100, 750, f"Order Receipt #{order.id}")
+    p.drawString(100, 700, f"Total Amount: ${order.total_amount:.2f}")
+    p.drawString(100, 650, f"Date: {order.created_at}")
+    
+    p.showPage()
+    p.save()
+    
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"receipt_{order.id}.pdf", mimetype='application/pdf')
+
 
 @app.route('/check_login', methods=['GET'])
 def check_login():
