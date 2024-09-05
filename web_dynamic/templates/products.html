@@ -73,19 +73,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function createProductCard(product, isLoggedIn) {
         const productCard = document.createElement('div');
         productCard.className = 'product-card';
+        productCard.dataset.productId = product.id;
         
         let quantityControlHtml = '';
         if (isLoggedIn) {
             quantityControlHtml = `
                 <div class="quantity-control" data-product-id="${product.id}">
-                    <button class="quantity-btn minus">−</button>
                     <span class="quantity-wrapper">
                         <span class="quantity-label">Qty:</span>
                         <span class="quantity">0</span>
                     </span>
-                    <button class="quantity-btn plus">+</button>
                 </div>
-                <button class="add-to-cart" data-product-id="${product.id}">Add to Cart</button>
             `;
         }
 
@@ -102,70 +100,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="rating-section">
                     <div class="star-rating" data-product-id="${product.id}">
+                        ${createStarRating(product.id, product.user_rating)}
                     </div>
                     <span class="average-rating">${product.average_rating ? product.average_rating.toFixed(1) : 'Not rated'}</span>
                 </div>
             </div>
         `;
 
-        // Add star ratings to the product card
-        const starRating = productCard.querySelector('.star-rating');
-        for (let i = 1; i <= 5; i++) {
-            const star = document.createElement('span');
-            star.className = 'star';
-            star.dataset.rating = i;
-            star.innerHTML = '&#9733;';
-            star.addEventListener('click', handleRating);
-            starRating.appendChild(star);
-        }
-
-        // Set user's previous rating if it exists and user is logged in
-        if (isLoggedIn && Object.keys(userRatings).length > 0 && userRatings[product.id]) {
-            updateStarRating(starRating, userRatings[product.id]);
-        }
-
-
         // Add event listeners for comment icon
         const commentIcon = productCard.querySelector('.comment-icon');
-        commentIcon.addEventListener('click', function() {
-            openCommentModal(this.dataset.productId);
-        });
+        if (commentIcon) {
+            commentIcon.addEventListener('click', function() {
+                openCommentModal(this.dataset.productId);
+            });
+        }
 
         if (isLoggedIn) {
             const quantityControl = productCard.querySelector('.quantity-control');
-            const minusBtn = quantityControl.querySelector('.minus');
-            const plusBtn = quantityControl.querySelector('.plus');
-            const addToCartBtn = productCard.querySelector('.add-to-cart');
+            if (quantityControl) {
+                const minusBtn = quantityControl.querySelector('.minus');
+                const plusBtn = quantityControl.querySelector('.plus');
+                const addToCartBtn = productCard.querySelector('.add-to-cart');
 
-            minusBtn.addEventListener('click', () => updateQuantity(product.id, -1));
-            plusBtn.addEventListener('click', () => updateQuantity(product.id, 1));
-            addToCartBtn.addEventListener('click', () => addToCart(product.id));
+                if (minusBtn) minusBtn.addEventListener('click', () => updateQuantity(product.id, -1));
+                if (plusBtn) plusBtn.addEventListener('click', () => updateQuantity(product.id, 1));
+                if (addToCartBtn) addToCartBtn.addEventListener('click', () => addToCart(product.id));
+            }
         }
+
+        // Add event listeners for star ratings
+        const stars = productCard.querySelectorAll('.star');
+        stars.forEach(star => {
+            star.addEventListener('click', handleRating);
+        });
 
         return productCard;
     }
 
-    function openCommentModal(productId) {
-        if (!isUserLoggedIn()) {
-            alert('Please log in to add comments.');
-            return;
+    function createStarRating(productId, currentRating = 0) {
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            const activeClass = i <= currentRating ? 'active' : '';
+            starsHtml += `<span class="star ${activeClass}" data-rating="${i}" data-product-id="${productId}">&#9733;</span>`;
         }
-        currentProductId = productId;
-        fetch(`http://127.0.0.1:5000/products/${productId}/comments`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('modal-product-name').textContent = data.product_name;
-                const commentsContainer = document.getElementById('comments-container');
-                commentsContainer.innerHTML = '';
-                data.comments.forEach(comment => {
-                    const commentEl = document.createElement('div');
-                    commentEl.className = 'comment';
-                    commentEl.textContent = comment.content;
-                    commentsContainer.appendChild(commentEl);
-                });
-                modal.style.display = 'block';
-            })
-            .catch(error => console.error('Error fetching comments:', error));
+        return starsHtml;
+    }
+
+    function openCommentModal(productId) {
+        isUserLoggedIn().then(loggedIn => {
+            if (loggedIn) {
+                currentProductId = productId;
+                fetch(`http://127.0.0.1:5000/products/${productId}/comments`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('modal-product-name').textContent = data.product_name;
+                        const commentsContainer = document.getElementById('comments-container');
+                        commentsContainer.innerHTML = '';
+                        data.comments.forEach(comment => {
+                            const commentEl = document.createElement('div');
+                            commentEl.className = 'comment';
+                            commentEl.textContent = comment.content;
+                            commentsContainer.appendChild(commentEl);
+                        });
+                        modal.style.display = 'block';
+                    })
+                    .catch(error => console.error('Error fetching comments:', error));
+            } else {
+                alert('Please log in to view and add comments.');
+                // Optionally, redirect to login page:
+                // window.location.href = '/login';
+            }
+        });
     }
 
     closeBtn.onclick = function() {
@@ -180,38 +185,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
     commentForm.onsubmit = function(e) {
         e.preventDefault();
-        const commentText = document.getElementById('comment-text').value;
-        fetch(`http://127.0.0.1:5000/products/${currentProductId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ content: commentText }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            openCommentModal(currentProductId);
-            document.getElementById('comment-text').value = '';
-        })
-        .catch(error => console.error('Error posting comment:', error));
+        isUserLoggedIn().then(loggedIn => {
+            if (loggedIn) {
+                const commentText = document.getElementById('comment-text').value;
+                fetch(`http://127.0.0.1:5000/products/${currentProductId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: commentText }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    openCommentModal(currentProductId);
+                    document.getElementById('comment-text').value = '';
+                })
+                .catch(error => console.error('Error posting comment:', error));
+            } else {
+                alert('Please log in to add comments.');
+                // Optionally, redirect to login page:
+                // window.location.href = '/login';
+            }
+        });
     };
 
     function handleRating(event) {
         const rating = parseInt(event.target.dataset.rating);
-        const productId = event.currentTarget.closest('.star-rating').dataset.productId;
+        const productId = event.target.dataset.productId;
         if (!productId) {
             console.error('Product ID is undefined');
             return;
         }
-        submitRating(productId, rating);
+        isUserLoggedIn().then(loggedIn => {
+            if (loggedIn) {
+                submitRating(productId, rating);
+            } else {
+                alert('Please log in to rate products.');
+                // Optionally, redirect to login page:
+                // window.location.href = '/login';
+            }
+        });
     }
 
     function submitRating(productId, rating) {
-        if (!isUserLoggedIn()) {
-            alert('Please log in to rate products.');
-            return;
-        }
-
         fetch(`http://127.0.0.1:5000/products/${productId}/rate`, {
             method: 'POST',
             headers: {
@@ -223,11 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const ratingElement = document.querySelector(`.star-rating[data-product-id="${productId}"]`);
-                updateStarRating(ratingElement, rating);
-                userRatings[productId] = rating;  // Update local userRatings object
-                const averageRatingSpan = ratingElement.nextElementSibling;
-                averageRatingSpan.textContent = data.new_average.toFixed(1);
+                updateProductRating(productId, data.new_average, rating);
             } else {
                 alert('Failed to submit rating. Please try again.');
             }
@@ -235,11 +247,34 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Error submitting rating:', error));
     }
 
-    function updateStarRating(ratingElement, rating) {
-        const stars = ratingElement.querySelectorAll('.star');
-        stars.forEach((star, index) => {
-            star.classList.toggle('active', index < rating);
-        });
+    function updateProductRating(productId, newAverage, userRating) {
+        const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+        if (!productCard) return;
+
+        const starRatingContainer = productCard.querySelector('.star-rating');
+        const averageRatingSpan = productCard.querySelector('.average-rating');
+
+        // Update average rating display
+        averageRatingSpan.textContent = newAverage.toFixed(1);
+
+        // Clear existing stars
+        starRatingContainer.innerHTML = '';
+
+        // Recreate stars with new rating
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'star';
+            star.dataset.rating = i;
+            star.dataset.productId = productId;
+            star.innerHTML = '&#9733;';
+            star.addEventListener('click', handleRating);
+
+            if (i <= userRating) {
+                star.classList.add('active');
+            }
+
+            starRatingContainer.appendChild(star);
+        }
     }
 
     function updateQuantity(productId, change) {
