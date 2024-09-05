@@ -135,27 +135,10 @@ INSERT INTO shipping_information (user_id, address_id, shipping_method_id, track
 (1, 1, 1, 'TRACK12345', NOW(), NOW()), -- Standard Shipping for John Doe
 (2, 2, 2, 'TRACK67890', NOW(), NOW()); -- Express Shipping for Jane Doe
 
--- -- Categories Table
--- DROP TABLE IF EXISTS categories;
-
--- CREATE TABLE categories (
---     id INT NOT NULL AUTO_INCREMENT,
---     name VARCHAR(255) NOT NULL,
---     slug VARCHAR(255) NOT NULL,
---     description TEXT,
---     created_at DATETIME,
---     updated_at DATETIME,
---     PRIMARY KEY (id),
---     UNIQUE (slug)
--- );
-
--- -- Insert sample data into categories table
--- INSERT INTO categories (name, slug, description, created_at, updated_at) VALUES
--- ('Medicines', 'medicines', 'Various types of medicines', NOW(), NOW()),
--- ('Supplements', 'supplements', 'Health supplements and vitamins', NOW(), NOW());
 
 -- Categories Table
 DROP TABLE IF EXISTS categories;
+
 CREATE TABLE categories (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -197,28 +180,8 @@ INSERT INTO product_categories (product_id, category_id, created_at, updated_at)
 (2, 2, NOW(), NOW());
   
 -- -- Products/Medicines Table
--- DROP TABLE IF EXISTS products;
-
--- CREATE TABLE products (
---     id INT NOT NULL AUTO_INCREMENT,
---     name VARCHAR(255) NOT NULL,
---     description TEXT,
---     price DECIMAL(10, 2) NOT NULL,
---     stock INT NOT NULL,
---     category VARCHAR(255),
---     slug VARCHAR(255),
---     created_at DATETIME NOT NULL,
---     updated_at DATETIME NOT NULL,
---     PRIMARY KEY (id)
--- );
-
--- -- Insert sample data into products table
--- INSERT INTO products (name, description, price, stock, category, slug, created_at, updated_at) VALUES
--- ('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 'Medicines', 'paracetamol', NOW(), NOW()),
--- ('Vitamin C', 'Immune system booster', 10.50, 200, 'Supplements', 'vitamin-c', NOW(), NOW());
-
--- -- Products/Medicines Table
 DROP TABLE IF EXISTS products;
+
 CREATE TABLE products (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
