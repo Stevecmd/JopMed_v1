@@ -162,7 +162,7 @@ class DBStorage:
         Filter objects by given criteria.
         """
         if cls not in classes.values():
-            return None
+            return []
 
         query = self.__session.query(cls)
         for key, value in kwargs.items():

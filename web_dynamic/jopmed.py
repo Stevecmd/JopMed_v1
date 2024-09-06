@@ -48,20 +48,6 @@ def account():
         flash(f'Failed to fetch account details: {str(e)}', 'error')
         return redirect(url_for('login'))
 
-# @app.route('/cart', methods=['GET'])
-# def get_cart_api():
-#     """Retrieves the current user's cart"""
-#     user_id = session.get('user_id')
-#     if not user_id:
-#         return jsonify({"error": "Unauthorized"}), 401
-    
-#     if models.storage_t == "db":
-#         cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
-#     else:
-#         all_cart_items = storage.all(ShoppingCart).values()
-#         cart_items = [item for item in all_cart_items if item.user_id == user_id]
-    
-#     return jsonify([item.to_dict() for item in cart_items])
 
 @app.route('/cart', methods=['GET'])
 def cart_page():
@@ -105,57 +91,50 @@ def remove_from_cart():
     data = request.get_json()
     user_id = session.get('user_id')
     if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({'error': 'User not logged in'}), 401
+    
     item_id = data.get('item_id')
-
-    if models.storage_t == "db":
-        cart_item = storage.session.query(ShoppingCart).filter(
-            ShoppingCart.user_id == user_id,
-            (ShoppingCart.product_id == item_id) | (ShoppingCart.service_id == item_id)
-        ).first()
-    else:
-        all_cart_items = storage.all(ShoppingCart).values()
-        cart_item = next((item for item in all_cart_items if item.user_id == user_id and (item.product_id == item_id or item.service_id == item_id)), None)
+    cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
 
     if not cart_item:
-        return jsonify({"error": "Item not found in cart"}), 404
+        return jsonify({'error': 'Item not found in cart'}), 404
 
     storage.delete(cart_item)
     storage.save()
 
-    return jsonify({"success": True, "message": "Item removed from cart"}), 200
+    return jsonify({'message': 'Item removed from cart'}), 200
 
 @app.route('/cart/update_cart_item', methods=['POST'])
 def update_cart_item():
     try:
-        if 'user_id' not in session:
-            return jsonify({"error": "Unauthorized"}), 401
-        
         data = request.get_json()
-        user_id = session['user_id']
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'User not logged in'}), 401
+        
         item_id = data.get('item_id')
         quantity_change = data.get('quantity')
         
-        if not item_id or quantity_change is None:
-            return jsonify({"error": "Invalid data"}), 400
-        
-        cart_items = storage.all(ShoppingCart)
-        cart_item = next((item for item in cart_items.values() if item.user_id == user_id and item.product_id == item_id), None)
-        
+        cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
         if not cart_item:
-            cart_item = ShoppingCart(user_id=user_id, product_id=item_id, quantity=quantity_change)
-            storage.new(cart_item)
-        else:
-            cart_item.quantity += quantity_change
-            if cart_item.quantity <= 0:
-                storage.delete(cart_item)
-            
-        storage.save()
+            return jsonify({'error': 'Item not found in cart'}), 404
         
-        return jsonify({"success": True, "message": "Cart updated successfully"}), 200
+        if isinstance(quantity_change, int):
+            # If quantity_change is an integer, treat it as an increment/decrement
+            cart_item.quantity += quantity_change
+        else:
+            # Otherwise, set the quantity directly
+            cart_item.quantity = int(quantity_change)
+        
+        if cart_item.quantity <= 0:
+            storage.delete(cart_item)
+        else:
+            storage.save()
+        
+        return jsonify({'success': True, 'message': 'Cart item updated', 'new_quantity': cart_item.quantity}), 200
     except Exception as e:
         app.logger.error(f"Error updating cart: {str(e)}")
-        return jsonify({"error": "An error occurred while updating the cart"}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/categories', strict_slashes=False)
@@ -316,20 +295,30 @@ def teardown_db(exception):
 # def cart_page():
 #     return render_template('cart.html')
 
+
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
     """Retrieves the current user's cart"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    if models.storage_t == "db":
-        cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
-    else:
-        all_cart_items = storage.all(ShoppingCart).values()
-        cart_items = [item for item in all_cart_items if item.user_id == user_id]
-    
-    return jsonify([item.to_dict() for item in cart_items])
+    try:
+        user_id = session.get('user_id')
+        app.logger.info(f"Attempting to fetch cart for user_id: {user_id}")
+        
+        if not user_id:
+            app.logger.error(f"Unauthorized access attempt to cart. Session: {session}")
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        cart_items = storage.filter(ShoppingCart, user_id=user_id)
+        
+        if cart_items is None:
+            app.logger.warning(f"No cart items found for user {user_id}")
+            return jsonify([]), 200  # Return an empty list instead of None
+        
+        cart_data = [item.to_dict() for item in cart_items]
+        app.logger.info(f"Cart data for user {user_id}: {cart_data}")
+        return jsonify(cart_data)
+    except Exception as e:
+        app.logger.error(f"Error fetching cart: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/check_login', methods=['GET'])
 def check_login():
@@ -380,6 +369,14 @@ def protected_route():
 @app.before_request
 def before_request():
     print(f"Session before request: {session}")
+    if 'user_id' in session:
+        user_id = session['user_id']
+        user = storage.get(User, user_id)
+        if user:
+            session['username'] = user.username
+        else:
+            session.pop('user_id', None)
+            session.pop('username', None)
 
 @app.route('/user/ratings', methods=['GET'])
 def get_user_ratings():
@@ -403,10 +400,16 @@ def checkout():
     
     user_id = session['user_id']
     try:
-        response = requests.get(f'{API_BASE_URL}/checkout', cookies=request.cookies)
-        response.raise_for_status()
-        checkout_data = response.json()
-        return render_template('checkout.html', checkout_data=checkout_data)
+        response = requests.get(f'{API_BASE_URL}/api/cart', timeout=5)
+        response.raise_for_status()  # This will raise an exception for HTTP errors
+        cart_items = response.json()
+        
+        if not cart_items:
+            flash('Your cart is empty', 'error')
+            return redirect(url_for('cart_page'))
+        
+        total_amount = sum(item['product']['price'] * item['quantity'] for item in cart_items if item.get('product'))
+        return render_template('checkout.html', cart_items=cart_items, total_amount=total_amount)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch checkout data: {str(e)}")
         flash('Failed to load checkout. Please try again later.', 'error')

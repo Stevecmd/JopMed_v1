@@ -38,15 +38,5 @@ class Service(BaseModel, Base):
 
     def to_dict(self):
         """Convert instance to dictionary format for JSON serialization"""
-        service_dict = {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'price': float(self.price),
-            'user_id': self.user_id,
-            'order_id': self.order_id,
-            'image_url': self.image_url,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
+        service_dict = super().to_dict()
         return service_dict

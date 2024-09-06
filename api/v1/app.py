@@ -1592,11 +1592,7 @@ def get_cart_api():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
     
-    if storage.storage_t == "db":
-        cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
-    else:
-        all_cart_items = storage.all(ShoppingCart).values()
-        cart_items = [item for item in all_cart_items if item.user_id == user_id]
+    cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
     
     return jsonify([item.to_dict() for item in cart_items])
 
@@ -1606,8 +1602,8 @@ def get_cart():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
     user_id = session['user_id']
-    cart_items = storage.filter(ShoppingCart, user_id=user_id)
-    return jsonify([item.to_dict() for item in cart_items]), 200
+    cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
+    return jsonify([item.to_dict() for item in cart_items])
 
 @app.route('/cart/add', methods=['POST'])
 # @login_required
@@ -1642,51 +1638,45 @@ def add_to_cart():
 @app.route('/cart/update_cart_item', methods=['POST', 'PUT'])
 # @login_required
 def update_cart_item():
-    """Updates the quantity of an item in the cart"""
-    data = request.get_json()
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-    item_id = data.get('item_id')
-    quantity_change = data.get('quantity')
-
-    if models.storage_t == "db":
-        cart_item = storage.session.query(ShoppingCart).filter(
-            ShoppingCart.user_id == user_id,
-            (ShoppingCart.product_id == item_id) | (ShoppingCart.service_id == item_id)
-        ).first()
-    else:
-        all_cart_items = storage.all(ShoppingCart).values()
-        cart_item = next((item for item in all_cart_items if item.user_id == user_id and (item.product_id == item_id or item.service_id == item_id)), None)
-
-    if not cart_item:
-        return jsonify({"error": "Item not found in cart"}), 404
-
-    cart_item.quantity += quantity_change
-    if cart_item.quantity <= 0:
-        storage.delete(cart_item)
-    else:
+    try:
+        data = request.get_json()
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'User not logged in'}), 401
+        
+        item_id = data.get('item_id')
+        quantity = data.get('quantity')
+        
+        cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
+        if not cart_item:
+            return jsonify({'error': 'Item not found in cart'}), 404
+        
+        cart_item.quantity = quantity
         storage.save()
-
-    return jsonify({"success": True, "message": "Cart item updated"}), 200
+        
+        return jsonify({'message': 'Cart item updated'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/cart/remove', methods=['DELETE'])
 # @login_required
 def remove_from_cart():
-    if 'user_id' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
-    user_id = session['user_id']
+    """Removes an item from the cart"""
     data = request.get_json()
-    if not data or 'cart_item_id' not in data:
-        return jsonify({'error': 'Invalid data'}), 400
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
+    
+    item_id = data.get('item_id')
+    cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
 
-    cart_item = storage.get(ShoppingCart, data['cart_item_id'])
-    if not cart_item or cart_item.user_id != user_id:
-        return jsonify({'error': 'Cart item not found'}), 404
+    if not cart_item:
+        return jsonify({'error': 'Item not found in cart'}), 404
 
     storage.delete(cart_item)
     storage.save()
-    return jsonify({'success': True}), 200
+
+    return jsonify({'message': 'Item removed from cart'}), 200
 
 # Star Ratings
 @app.route('/user/ratings', methods=['GET'])
