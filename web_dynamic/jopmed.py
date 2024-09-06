@@ -7,6 +7,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from models.shopping_cart import ShoppingCart
 from models.products import Products
 from models.service import Service
+import models
 import logging
 from datetime import timedelta
 
@@ -47,22 +48,28 @@ def account():
         flash(f'Failed to fetch account details: {str(e)}', 'error')
         return redirect(url_for('login'))
 
-@app.route('/api/cart', methods=['GET'])
+@app.route('/cart', methods=['GET'])
 def get_cart():
     """Retrieves the current user's cart"""
     user_id = session.get('user_id')
     if not user_id:
-        return jsonify({"error": "User not logged in"}), 401
-    cart_items = storage.all(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if models.storage_t == "db":
+        cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
+    else:
+        all_cart_items = storage.all(ShoppingCart).values()
+        cart_items = [item for item in all_cart_items if item.user_id == user_id]
+    
     return jsonify([item.to_dict() for item in cart_items])
 
-@app.route('/api/cart/add', methods=['POST'])
+@app.route('/cart/add', methods=['POST'])
 def add_to_cart():
     """Adds an item to the cart"""
     data = request.get_json()
     user_id = session.get('user_id')
     if not user_id:
-        abort(401, description="User not logged in")
+        return jsonify({"error": "Unauthorized"}), 401
     item_id = data.get('item_id')
     item_type = data.get('item_type')  # 'product' or 'service'
     quantity = data.get('quantity', 1)
@@ -72,10 +79,10 @@ def add_to_cart():
     elif item_type == 'service':
         item = storage.get(Service, item_id)
     else:
-        abort(400, description="Invalid item type")
+        return jsonify({"error": "Invalid item type"}), 400
 
     if not item:
-        abort(404, description="Item not found")
+        return jsonify({"error": "Item not found"}), 404
 
     cart_item = ShoppingCart(user_id=user_id, quantity=quantity)
     if item_type == 'product':
@@ -86,52 +93,66 @@ def add_to_cart():
     storage.new(cart_item)
     storage.save()
 
-    return jsonify(cart_item.to_dict()), 201
+    return jsonify({"success": True, "message": "Item added to cart"}), 200
 
-@app.route('/api/cart/update', methods=['PUT', 'POST'])
-def update_cart_item():
-    """Updates the quantity of an item in the cart"""
-    data = request.get_json()
-    user_id = session.get('user_id')
-    if not user_id:
-        abort(401, description="User not logged in")
-    item_id = data.get('item_id')
-    new_quantity = data.get('quantity')
-
-    # Use the filter method directly on the ShoppingCart class
-    cart_item = ShoppingCart.filter(user_id=user_id, product_id=item_id).first()
-    if not cart_item:
-        cart_item = ShoppingCart.filter(user_id=user_id, service_id=item_id).first()
-
-    if not cart_item:
-        abort(404, description="Cart item not found")
-
-    cart_item.quantity = new_quantity
-    storage.save()
-
-    return jsonify(cart_item.to_dict()), 200
-
-@app.route('/api/cart/remove', methods=['DELETE'])
+@app.route('/cart/remove', methods=['DELETE'])
 def remove_from_cart():
     """Removes an item from the cart"""
     data = request.get_json()
     user_id = session.get('user_id')
     if not user_id:
-        abort(401, description="User not logged in")
+        return jsonify({"error": "Unauthorized"}), 401
     item_id = data.get('item_id')
 
-    cart_item = storage.all(ShoppingCart).filter(
-        ShoppingCart.user_id == user_id,
-        (ShoppingCart.product_id == item_id) | (ShoppingCart.service_id == item_id)
-    ).first()
+    if models.storage_t == "db":
+        cart_item = storage.session.query(ShoppingCart).filter(
+            ShoppingCart.user_id == user_id,
+            (ShoppingCart.product_id == item_id) | (ShoppingCart.service_id == item_id)
+        ).first()
+    else:
+        all_cart_items = storage.all(ShoppingCart).values()
+        cart_item = next((item for item in all_cart_items if item.user_id == user_id and (item.product_id == item_id or item.service_id == item_id)), None)
 
     if not cart_item:
-        abort(404, description="Cart item not found")
+        return jsonify({"error": "Item not found in cart"}), 404
 
     storage.delete(cart_item)
     storage.save()
 
-    return jsonify({"message": "Item removed from cart"}), 200
+    return jsonify({"success": True, "message": "Item removed from cart"}), 200
+
+@app.route('/cart/update_cart_item', methods=['POST'])
+def update_cart_item():
+    try:
+        if 'user_id' not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        data = request.get_json()
+        user_id = session['user_id']
+        item_id = data.get('item_id')
+        quantity_change = data.get('quantity')
+        
+        if not item_id or quantity_change is None:
+            return jsonify({"error": "Invalid data"}), 400
+        
+        cart_items = storage.all(ShoppingCart)
+        cart_item = next((item for item in cart_items.values() if item.user_id == user_id and item.product_id == item_id), None)
+        
+        if not cart_item:
+            cart_item = ShoppingCart(user_id=user_id, product_id=item_id, quantity=quantity_change)
+            storage.new(cart_item)
+        else:
+            cart_item.quantity += quantity_change
+            if cart_item.quantity <= 0:
+                storage.delete(cart_item)
+            
+        storage.save()
+        
+        return jsonify({"success": True, "message": "Cart updated successfully"}), 200
+    except Exception as e:
+        app.logger.error(f"Error updating cart: {str(e)}")
+        return jsonify({"error": "An error occurred while updating the cart"}), 500
+
 
 @app.route('/categories', strict_slashes=False)
 def categories():

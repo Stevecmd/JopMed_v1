@@ -18,9 +18,24 @@
         const totalAmountElement = document.getElementById('total-amount');
 
         function loadCart() {
-            fetch('/cart')
-            .then(response => response.json())
+            fetch('/cart', {
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    // User is not logged in
+                    cartItemsContainer.innerHTML = '<p>Please <a href="/login">log in</a> to view your cart.</p>';
+                    totalAmountElement.textContent = '0.00';
+                    return Promise.reject('User not logged in');
+                }
+                return response.json();
+            })
             .then(cart => {
+                if (!Array.isArray(cart)) {
+                    console.error('Invalid cart data:', cart);
+                    cartItemsContainer.innerHTML = '<p>Error loading cart. Please try again later.</p>';
+                    return;
+                }
                 cartItemsContainer.innerHTML = '';
                 let total = 0;
                 cart.forEach(item => {
@@ -41,7 +56,12 @@
                 });
                 totalAmountElement.textContent = total.toFixed(2);
             })
-            .catch(error => console.error('Error loading cart:', error));
+            .catch(error => {
+                if (error !== 'User not logged in') {
+                    console.error('Error loading cart:', error);
+                    cartItemsContainer.innerHTML = '<p>Error loading cart. Please try again later.</p>';
+                }
+            });
         }
 
         loadCart();
@@ -60,8 +80,9 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    cart_item_id: itemId
-                })
+                    item_id: itemId
+                }),
+                credentials: 'include'
             })
             .then(response => response.json())
             .then(data => {

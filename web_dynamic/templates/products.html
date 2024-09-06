@@ -43,18 +43,25 @@
         });
 
         function updateCart(productId, change) {
-            fetch('http://127.0.0.1:5000/api/cart/update_cart_item', {
+            fetch('/cart/update_cart_item', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    product_id: productId,
-                    quantity_change: change
+                    item_id: productId,
+                    quantity: change
                 }),
                 credentials: 'include'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401) {
+                    // User is not logged in
+                    alert('Please log in to update your cart.');
+                    return Promise.reject('User not logged in');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     updateQuantityDisplay(productId, change);
@@ -62,7 +69,11 @@
                     alert('Failed to update cart.');
                 }
             })
-            .catch(error => console.error('Error updating cart:', error));
+            .catch(error => {
+                if (error !== 'User not logged in') {
+                    console.error('Error updating cart:', error);
+                }
+            });
         }
 
         function updateQuantityDisplay(productId, change) {
@@ -75,7 +86,9 @@
         }
 
         function initializeCartQuantities() {
-            fetch('/cart')
+            fetch('/cart', {
+                credentials: 'include'
+            })
             .then(response => response.json())
             .then(cart => {
                 for (const item of cart) {

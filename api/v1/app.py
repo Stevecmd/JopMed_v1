@@ -43,6 +43,7 @@ import string
 import random
 from io import BytesIO
 from reportlab.pdfgen import canvas
+import models
 
 
 app = Flask(__name__)
@@ -1591,7 +1592,7 @@ def get_cart():
         return jsonify({'error': 'User not logged in'}), 401
     user_id = session['user_id']
     cart_items = storage.filter(ShoppingCart, user_id=user_id)
-    return jsonify([item.to_dict() for item in cart_items])
+    return jsonify([item.to_dict() for item in cart_items]), 200
 
 @app.route('/cart/add', methods=['POST'])
 # @login_required
@@ -1622,32 +1623,37 @@ def add_to_cart():
     storage.save()
     return jsonify({'success': True, 'cart_item': cart_item.to_dict()}), 200
 
-@app.route('/api/cart/update_cart_item', methods=['POST', 'PUT'])
+
+@app.route('/cart/update_cart_item', methods=['POST', 'PUT'])
 # @login_required
 def update_cart_item():
-    if 'user_id' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
-    user_id = session['user_id']
+    """Updates the quantity of an item in the cart"""
     data = request.get_json()
-    if not data or 'product_id' not in data or 'quantity_change' not in data:
-        return jsonify({'error': 'Invalid data'}), 400
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    item_id = data.get('item_id')
+    quantity_change = data.get('quantity')
 
-    product_id = data['product_id']
-    quantity_change = data['quantity_change']
+    if models.storage_t == "db":
+        cart_item = storage.session.query(ShoppingCart).filter(
+            ShoppingCart.user_id == user_id,
+            (ShoppingCart.product_id == item_id) | (ShoppingCart.service_id == item_id)
+        ).first()
+    else:
+        all_cart_items = storage.all(ShoppingCart).values()
+        cart_item = next((item for item in all_cart_items if item.user_id == user_id and (item.product_id == item_id or item.service_id == item_id)), None)
 
-    cart_item = storage.filter(ShoppingCart, user_id=user_id, product_id=product_id).first()
-    if cart_item:
-        cart_item.quantity += quantity_change
-        if cart_item.quantity <= 0:
-            storage.delete(cart_item)
-        else:
-            storage.save()
-    elif quantity_change > 0:
-        cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=quantity_change)
-        storage.new(cart_item)
+    if not cart_item:
+        return jsonify({"error": "Item not found in cart"}), 404
+
+    cart_item.quantity += quantity_change
+    if cart_item.quantity <= 0:
+        storage.delete(cart_item)
+    else:
         storage.save()
 
-    return jsonify({'success': True, 'cart_item': cart_item.to_dict() if cart_item else None}), 200
+    return jsonify({"success": True, "message": "Cart item updated"}), 200
 
 @app.route('/cart/remove', methods=['DELETE'])
 # @login_required
@@ -1718,7 +1724,7 @@ def register_payment_method():
     
     return render_template('register_payment_method.html')
 
-@app.route('/api/purchase/confirm', methods=['POST'])
+@app.route('/purchase/confirm', methods=['POST'])
 def confirm_purchase():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
