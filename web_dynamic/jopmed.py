@@ -49,7 +49,7 @@ def account():
         return redirect(url_for('login'))
 
 @app.route('/cart', methods=['GET'])
-def get_cart():
+def get_cart_api():
     """Retrieves the current user's cart"""
     user_id = session.get('user_id')
     if not user_id:
@@ -311,6 +311,21 @@ def teardown_db(exception):
 @app.route('/cart', methods=['GET'])
 def cart_page():
     return render_template('cart.html')
+
+@app.route('/api/cart', methods=['GET'])
+def get_cart():
+    """Retrieves the current user's cart"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if models.storage_t == "db":
+        cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
+    else:
+        all_cart_items = storage.all(ShoppingCart).values()
+        cart_items = [item for item in all_cart_items if item.user_id == user_id]
+    
+    return jsonify([item.to_dict() for item in cart_items])
 
 @app.route('/check_login', methods=['GET'])
 def check_login():
