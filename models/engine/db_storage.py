@@ -101,6 +101,11 @@ class DBStorage:
         Session = scoped_session(sess_factory)
         self.__session = Session
 
+    @property
+    def session(self):
+        """Returns the current database session"""
+        return self.__session
+
     def close(self):
         """call remove() method on the private session attribute"""
         self.__session.remove()

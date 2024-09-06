@@ -19,6 +19,8 @@ class ShoppingCart(BaseModel, Base):
 
         user = relationship("User", back_populates="cart_items")
         product = relationship("Products", back_populates="cart_items")
+        service_id = Column(Integer, ForeignKey('services.id'), nullable=True)
+        service = relationship("Service", back_populates="cart_items")
 
     def __init__(self, *args, **kwargs):
         """initializes shopping cart item"""
@@ -26,12 +28,7 @@ class ShoppingCart(BaseModel, Base):
 
     def to_dict(self):
         """Returns a dictionary representation of the ShoppingCart instance"""
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'product_id': self.product_id,
-            'quantity': self.quantity,
-            'product': self.product.to_dict() if self.product else None,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
+        item_dict = super().to_dict()
+        item_dict['product'] = self.product.to_dict(include_image=True) if self.product else None
+        item_dict['service'] = self.service.to_dict() if self.service else None
+        return item_dict

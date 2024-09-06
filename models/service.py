@@ -30,6 +30,7 @@ class Service(BaseModel, Base):
         # Define relationships
         user = relationship("User", back_populates="services")
         order = relationship("Orders", back_populates="services")
+        cart_items = relationship("ShoppingCart", back_populates="service")
 
     def __init__(self, *args, **kwargs):
         """initializes service"""

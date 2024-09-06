@@ -1,9 +1,12 @@
 import os
 import requests
-from flask import Flask, render_template, session, redirect, url_for, flash, jsonify, request
+from flask import Flask, render_template, session, redirect, url_for, flash, jsonify, request, abort
 from models import storage
 from models.users import User
 from werkzeug.security import check_password_hash, generate_password_hash
+from models.shopping_cart import ShoppingCart
+from models.products import Products
+from models.service import Service
 import logging
 from datetime import timedelta
 
@@ -46,98 +49,89 @@ def account():
 
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
-    # Initialize the cart if it doesn't exist in the session
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    cart_items = []
-    for product_id, quantity in session['cart'].items():
-        # Fetch product details from the API
-        response = requests.get(f'{API_BASE_URL}/products/{product_id}')
-        if response.status_code == 200:
-            product = response.json()
-            cart_items.append({
-                "id": product['id'],
-                "name": product['name'],
-                "price": product['price'],
-                "quantity": quantity,
-                "total": product['price'] * quantity
-            })
-        else:
-            # Handle the case where the product is not found
-            flash(f'Product with ID {product_id} not found', 'error')
-
-    return jsonify(cart_items)
+    """Retrieves the current user's cart"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 401
+    cart_items = storage.all(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
+    return jsonify([item.to_dict() for item in cart_items])
 
 @app.route('/api/cart/add', methods=['POST'])
 def add_to_cart():
-    data = request.json
-    product_id = str(data.get('product_id'))
+    """Adds an item to the cart"""
+    data = request.get_json()
+    user_id = session.get('user_id')
+    if not user_id:
+        abort(401, description="User not logged in")
+    item_id = data.get('item_id')
+    item_type = data.get('item_type')  # 'product' or 'service'
     quantity = data.get('quantity', 1)
 
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    # Verify that the product exists before adding to cart
-    response = requests.get(f'{API_BASE_URL}/products/{product_id}')
-    if response.status_code != 200:
-        return jsonify({"success": False, "message": "Product not found"}), 404
-
-    if product_id in session['cart']:
-        session['cart'][product_id] += quantity
+    if item_type == 'product':
+        item = storage.get(Products, item_id)
+    elif item_type == 'service':
+        item = storage.get(Service, item_id)
     else:
-        session['cart'][product_id] = quantity
+        abort(400, description="Invalid item type")
 
-    session.modified = True
-    return jsonify({"success": True, "message": "Product added to cart"})
+    if not item:
+        abort(404, description="Item not found")
 
-
-@app.route('/api/cart/update', methods=['POST'])
-def update_cart():
-    data = request.json
-    app.logger.debug(f"Received data for cart update: {data}")
-    product_id = str(data.get('product_id'))
-    quantity_change = data.get('quantity_change')
-
-    if not product_id or quantity_change is None:
-        app.logger.error("Invalid data received")
-        return jsonify({"error": "Invalid data"}), 400
-
-    app.logger.debug(f"Session before update: {session}")
-
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    if product_id in session['cart']:
-        session['cart'][product_id] += quantity_change
-        if session['cart'][product_id] <= 0:
-            del session['cart'][product_id]
+    cart_item = ShoppingCart(user_id=user_id, quantity=quantity)
+    if item_type == 'product':
+        cart_item.product_id = item_id
     else:
-        session['cart'][product_id] = quantity_change
+        cart_item.service_id = item_id
 
-    session.modified = True
-    app.logger.debug(f"Session after update: {session}")
-    return jsonify({"success": True, "message": "Cart updated"})
+    storage.new(cart_item)
+    storage.save()
 
-@app.route('/api/cart/update/<int:product_id>/<int:quantity>', methods=['POST', 'PUT'])
-def update_cart_by_product_id(product_id, quantity):
-    if 'cart' in session and str(product_id) in session['cart']:
-        if quantity > 0:
-            session['cart'][str(product_id)] = quantity
-        else:
-            del session['cart'][str(product_id)]
-        session.modified = True
-        return jsonify({"success": True, "message": "Cart updated"})
-    return jsonify({"success": False, "message": "Product not in cart"}), 400
+    return jsonify(cart_item.to_dict()), 201
 
-@app.route('/api/cart/remove/<int:product_id>', methods=['POST', 'PUT'])
-def remove_from_cart(product_id):
-    if 'cart' in session and str(product_id) in session['cart']:
-        del session['cart'][str(product_id)]
-        session.modified = True
-        return jsonify({"success": True, "message": "Product removed from cart"})
-    return jsonify({"success": False, "message": "Product not in cart"}), 400
+@app.route('/api/cart/update', methods=['PUT', 'POST'])
+def update_cart_item():
+    """Updates the quantity of an item in the cart"""
+    data = request.get_json()
+    user_id = session.get('user_id')
+    if not user_id:
+        abort(401, description="User not logged in")
+    item_id = data.get('item_id')
+    new_quantity = data.get('quantity')
 
+    # Use the filter method directly on the ShoppingCart class
+    cart_item = ShoppingCart.filter(user_id=user_id, product_id=item_id).first()
+    if not cart_item:
+        cart_item = ShoppingCart.filter(user_id=user_id, service_id=item_id).first()
+
+    if not cart_item:
+        abort(404, description="Cart item not found")
+
+    cart_item.quantity = new_quantity
+    storage.save()
+
+    return jsonify(cart_item.to_dict()), 200
+
+@app.route('/api/cart/remove', methods=['DELETE'])
+def remove_from_cart():
+    """Removes an item from the cart"""
+    data = request.get_json()
+    user_id = session.get('user_id')
+    if not user_id:
+        abort(401, description="User not logged in")
+    item_id = data.get('item_id')
+
+    cart_item = storage.all(ShoppingCart).filter(
+        ShoppingCart.user_id == user_id,
+        (ShoppingCart.product_id == item_id) | (ShoppingCart.service_id == item_id)
+    ).first()
+
+    if not cart_item:
+        abort(404, description="Cart item not found")
+
+    storage.delete(cart_item)
+    storage.save()
+
+    return jsonify({"message": "Item removed from cart"}), 200
 
 @app.route('/categories', strict_slashes=False)
 def categories():
@@ -360,6 +354,23 @@ def get_user_ratings():
     except requests.RequestException as e:
         app.logger.error(f"Error fetching user ratings: {str(e)}")
         return jsonify({'error': 'Failed to fetch user ratings'}), 500
+
+@app.route('/checkout', methods=['GET'])
+def checkout():
+    if 'user_id' not in session:
+        flash('Please log in to proceed to checkout', 'error')
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    try:
+        response = requests.get(f'{API_BASE_URL}/checkout', cookies=request.cookies)
+        response.raise_for_status()
+        checkout_data = response.json()
+        return render_template('checkout.html', checkout_data=checkout_data)
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch checkout data: {str(e)}")
+        flash('Failed to load checkout. Please try again later.', 'error')
+        return redirect(url_for('cart_page'))
 
 if __name__ == "__main__":
     print("Running Flask application...")

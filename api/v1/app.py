@@ -56,7 +56,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
 
-app.register_blueprint(app_views)
+
 
 @app.teardown_appcontext
 def close_db(error):
@@ -1587,6 +1587,8 @@ def remove_from_wishlist():
 @app.route('/cart', methods=['GET'])
 # @login_required
 def get_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
     user_id = session['user_id']
     cart_items = storage.filter(ShoppingCart, user_id=user_id)
     return jsonify([item.to_dict() for item in cart_items])
@@ -1594,43 +1596,64 @@ def get_cart():
 @app.route('/cart/add', methods=['POST'])
 # @login_required
 def add_to_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
     user_id = session['user_id']
     data = request.get_json()
-    if not data or 'product_id' not in data or 'quantity' not in data:
+    if not data or ('product_id' not in data and 'service_id' not in data) or 'quantity' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
-    product = storage.get(Products, data['product_id'])
-    if not product:
-        return jsonify({'error': 'Product not found'}), 404
+    if 'product_id' in data:
+        item = storage.get(Products, data['product_id'])
+        item_type = 'product'
+    else:
+        item = storage.get(Service, data['service_id'])
+        item_type = 'service'
 
-    cart_item = storage.filter(ShoppingCart, user_id=user_id, product_id=data['product_id']).first()
+    if not item:
+        return jsonify({'error': f'{item_type.capitalize()} not found'}), 404
+
+    cart_item = storage.filter(ShoppingCart, user_id=user_id, **{f'{item_type}_id': item.id}).first()
     if cart_item:
         cart_item.quantity += data['quantity']
     else:
-        cart_item = ShoppingCart(user_id=user_id, product_id=data['product_id'], quantity=data['quantity'])
+        cart_item = ShoppingCart(user_id=user_id, **{f'{item_type}_id': item.id}, quantity=data['quantity'])
         storage.new(cart_item)
     storage.save()
-    return jsonify({'success': True}), 200
+    return jsonify({'success': True, 'cart_item': cart_item.to_dict()}), 200
 
-@app.route('/cart/update', methods=['POST', 'PUT'])
+@app.route('/api/cart/update_cart_item', methods=['POST', 'PUT'])
 # @login_required
-def update_cart():
+def update_cart_item():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
     user_id = session['user_id']
     data = request.get_json()
-    if not data or 'cart_item_id' not in data or 'quantity' not in data:
+    if not data or 'product_id' not in data or 'quantity_change' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
-    cart_item = storage.get(ShoppingCart, data['cart_item_id'])
-    if not cart_item or cart_item.user_id != user_id:
-        return jsonify({'error': 'Cart item not found'}), 404
+    product_id = data['product_id']
+    quantity_change = data['quantity_change']
 
-    cart_item.quantity = data['quantity']
-    storage.save()
-    return jsonify({'success': True}), 200
+    cart_item = storage.filter(ShoppingCart, user_id=user_id, product_id=product_id).first()
+    if cart_item:
+        cart_item.quantity += quantity_change
+        if cart_item.quantity <= 0:
+            storage.delete(cart_item)
+        else:
+            storage.save()
+    elif quantity_change > 0:
+        cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=quantity_change)
+        storage.new(cart_item)
+        storage.save()
+
+    return jsonify({'success': True, 'cart_item': cart_item.to_dict() if cart_item else None}), 200
 
 @app.route('/cart/remove', methods=['DELETE'])
 # @login_required
 def remove_from_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
     user_id = session['user_id']
     data = request.get_json()
     if not data or 'cart_item_id' not in data:
@@ -1664,18 +1687,17 @@ def get_user_ratings():
         return jsonify({'error': 'Failed to fetch user ratings'}), 500
 
 
-@app.route('/checkout')
+@app.route('/checkout', methods=['GET'])
 def checkout():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
     user_id = session['user_id']
     cart_items = storage.filter(ShoppingCart, user_id=user_id)
-    payment_method = storage.filter(PaymentMethod, user_id=user_id).first()
+    total_amount = sum(item.product.price * item.quantity for item in cart_items if item.product)
+    total_amount += sum(item.service.price * item.quantity for item in cart_items if item.service)
     
-    return render_template('checkout.html', 
-                           user_has_payment_method=bool(payment_method),
-                           last_four_digits=payment_method.last_four if payment_method else None)
+    return render_template('checkout.html', cart_items=cart_items, total_amount=total_amount)
 
 @app.route('/register-payment-method', methods=['GET', 'POST'])
 def register_payment_method():
@@ -1703,40 +1725,51 @@ def confirm_purchase():
     
     user_id = session['user_id']
     cart_items = storage.filter(ShoppingCart, user_id=user_id)
-    payment_method = storage.filter(PaymentMethod, user_id=user_id).first()
     
-    if not payment_method:
-        return jsonify({'error': 'No payment method registered'}), 400
+    if not cart_items:
+        return jsonify({'error': 'Cart is empty'}), 400
     
-    # Calculate total amount
-    total_amount = sum(item.product.price * item.quantity for item in cart_items)
+    total_amount = sum(item.product.price * item.quantity for item in cart_items if item.product)
+    total_amount += sum(item.service.price * item.quantity for item in cart_items if item.service)
     
-    # Simulate payment processing (always successful in this MVP)
-    payment_successful = True
+    # Create order
+    new_order = Orders(
+        user_id=user_id,
+        address_id=1,  # You might want to get this from the user's default address or session
+        status='pending',
+        payment_method='credit_card',  # Adjust based on actual payment method used
+        total_amount=total_amount
+    )
+    storage.new(new_order)
     
-    if payment_successful:
-        # Create order
-        new_order = Orders(
-            user_id=user_id,
-            address_id=1,  # You might want to get this from the user's default address or session
-            status='pending',
-            payment_method='credit_card',  # Adjust based on actual payment method used
-            total_amount=total_amount
-        )
-        storage.new(new_order)
-        
-        # Clear cart
-        for item in cart_items:
-            storage.delete(item)
-        
-        storage.save()
-        
-        # Generate receipt
-        receipt_url = url_for('generate_receipt', order_id=new_order.id)
-        
-        return jsonify({'success': True, 'receipt_url': receipt_url}), 200
-    else:
-        return jsonify({'error': 'Payment processing failed'}), 400
+    # Create order items
+    for cart_item in cart_items:
+        if cart_item.product:
+            order_item = Order_Items(
+                order_id=new_order.id,
+                product_id=cart_item.product_id,
+                quantity=cart_item.quantity,
+                price=cart_item.product.price
+            )
+        else:
+            order_item = Order_Items(
+                order_id=new_order.id,
+                service_id=cart_item.service_id,
+                quantity=cart_item.quantity,
+                price=cart_item.service.price
+            )
+        storage.new(order_item)
+    
+    # Clear cart
+    for item in cart_items:
+        storage.delete(item)
+    
+    storage.save()
+    
+    # Generate receipt
+    receipt_url = url_for('generate_receipt', order_id=new_order.id)
+    
+    return jsonify({'success': True, 'receipt_url': receipt_url}), 200
 
 @app.route('/receipt/<int:order_id>')
 def generate_receipt(order_id):

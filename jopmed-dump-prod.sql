@@ -569,12 +569,14 @@ CREATE TABLE shopping_cart (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT,
     product_id INT NOT NULL,
+    service_id INT,
     quantity INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (service_id) REFERENCES services(id)
 );
 
 -- Create Indexes
