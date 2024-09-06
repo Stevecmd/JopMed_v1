@@ -55,10 +55,13 @@ class Products(BaseModel, Base):
         product_images = relationship("Product_Images", back_populates="product")
 
     def to_dict(self, include_image=False):
+        """Returns a dictionary representation of the Product instance"""
         product_dict = super().to_dict()
         if include_image:
             main_image = self.product_images[0] if self.product_images else None
             product_dict['image_url'] = main_image.image_url if main_image else None
+        # Remove the product_images relationship from the dictionary
+        product_dict.pop('product_images', None)
         return product_dict
 
     def __init__(self, *args, **kwargs):
