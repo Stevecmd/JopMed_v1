@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
     function updateCart(productId, change) {
-        fetch('http://localhost:5000/api/cart/update_cart_item', {
+        fetch('http://localhost:5000/api/cart/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

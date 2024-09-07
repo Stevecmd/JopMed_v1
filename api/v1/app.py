@@ -1579,19 +1579,30 @@ def get_cart():
 
 @app.route('/api/cart/add', methods=['POST'])
 def add_to_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
     data = request.get_json()
-    user_id = data.get('user_id')
+    user_id = session['user_id']
     product_id = data.get('product_id')
     service_id = data.get('service_id')
     quantity = data.get('quantity', 1)
 
-    if not user_id or not (product_id or service_id) or not quantity:
+    if not (product_id or service_id) or not quantity:
         return jsonify({'error': 'Invalid data'}), 400
 
-    cart_item = ShoppingCart(user_id=user_id, product_id=product_id, service_id=service_id, quantity=quantity)
-    storage.new(cart_item)
-    storage.save()
-    return jsonify(cart_item.to_dict()), 201
+    try:
+        if product_id:
+            cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=quantity)
+        elif service_id:
+            cart_item = ShoppingCart(user_id=user_id, service_id=service_id, quantity=quantity)
+        
+        storage.new(cart_item)
+        storage.save()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        app.logger.error(f"Failed to add to cart: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/cart/update', methods=['POST'])
 def update_cart():
