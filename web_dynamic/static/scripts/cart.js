@@ -4,7 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function fetchCart() {
         fetch('http://localhost:5000/api/cart', {
-            credentials: 'include'  // Ensure cookies are included
+            credentials: 'include',  // Ensure cookies are included
+            headers: {
+                'Content-Type': 'application/json',
+            },
         })
         .then(response => {
             if (response.status === 401) {

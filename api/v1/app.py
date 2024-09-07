@@ -28,13 +28,11 @@ from models.users_roles import User_Roles
 from models.wishlist import Wishlist
 import os
 from os import environ
-from flask import Flask, request, render_template, redirect, url_for, session, flash, make_response, send_file, request, jsonify
-from flask import flash
+from flask import Flask, request, url_for, session, make_response, send_file, request, jsonify
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flasgger import Swagger
-from flasgger.utils import swag_from
 from api.v1.views import app_views
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -196,7 +194,7 @@ def api_register():
         storage.save()
         return jsonify({'success': True, 'user_id': new_user.id, 'message': 'Registration successful'}), 201
     except IntegrityError:
-        app.logger.error(f"Failed to register user: {str(e)}")
+        app.logger.error(f"Failed to register user")
         return jsonify({'error': 'Failed to register user'}), 500
 
 def get_current_user():
@@ -1711,9 +1709,9 @@ def confirm_purchase():
     # Create order
     new_order = Orders(
         user_id=user_id,
-        address_id=1,  # You might want to get this from the user's default address or session
+        address_id=1,
         status='pending',
-        payment_method='credit_card',  # Adjust based on actual payment method used
+        payment_method='credit_card',
         total_amount=total_amount
     )
     storage.new(new_order)
