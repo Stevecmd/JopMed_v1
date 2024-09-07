@@ -1567,7 +1567,7 @@ def remove_from_wishlist():
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
     if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
+        return jsonify({'message': 'Login to shop'}), 401
     
     user_id = session['user_id']
     cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()

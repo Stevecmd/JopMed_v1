@@ -53,7 +53,7 @@ def account():
 @app.route('/cart', methods=['GET'])
 def cart_page():
     try:
-        response = requests.get(f'{API_BASE_URL}/api/cart', timeout=5)
+        response = requests.get(f'{API_BASE_URL}/cart', timeout=5)
         response.raise_for_status()
         cart_items = response.json()
         return render_template('cart.html', cart_items=cart_items)
@@ -228,7 +228,7 @@ def register():
 @app.route('/checkout', methods=['GET'])
 def checkout():
     try:
-        response = requests.get(f'{API_BASE_URL}/api/cart', timeout=5)
+        response = requests.get(f'{API_BASE_URL}/cart', timeout=5)
         response.raise_for_status()
         cart_items = response.json()
         
