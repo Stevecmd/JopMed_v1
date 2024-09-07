@@ -18,7 +18,10 @@
         const totalAmountElement = document.getElementById('total-amount');
 
         function loadCart() {
-            fetch('/api/cart', {
+            fetch('/cart', {
+                headers: {
+                    'User-ID': sessionStorage.getItem('user_id')
+                },
                 credentials: 'include'
             })
             .then(response => {
@@ -31,6 +34,7 @@
                 return response.json();
             })
             .then(cart => {
+                console.log('Cart data:', cart);
                 if (!Array.isArray(cart)) {
                     console.error('Invalid cart data:', cart);
                     cartItemsContainer.innerHTML = '<p>Error loading cart. Please try again later.</p>';
@@ -79,13 +83,13 @@
         });
 
         function removeFromCart(itemId) {
-            fetch('/api/cart/remove', {
+            fetch('/cart/remove', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    item_id: itemId
+                    product_id: productId
                 }),
                 credentials: 'include'
             })
@@ -111,7 +115,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    item_id: itemId,
+                    product_id: productId,
                     quantity: change
                 }),
                 credentials: 'include'

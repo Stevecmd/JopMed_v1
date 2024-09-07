@@ -8,21 +8,24 @@
     <div id="cart-summary">
         {% for item in cart_items %}
             <div class="cart-item">
-                <h3>{{ item.product.name if item.product else item.service.name }}</h3>
-                <p>Quantity: {{ item.quantity }}</p>
-                <p>Price: ${{ (item.product.price if item.product else item.service.price) * item.quantity }}</p>
+                <img src="{{ item.product.image_url if item.product else item.service.image_url }}" alt="{{ item.product.name if item.product else item.service.name }}" class="cart-item-image">
+                <div class="cart-item-details">
+                    <h3>{{ item.product.name if item.product else item.service.name }}</h3>
+                    <p>Quantity: {{ item.quantity }}</p>
+                    <p>Price: ${{ "%.2f" | format((item.product.price if item.product else item.service.price) * item.quantity) }}</p>
+                </div>
             </div>
         {% endfor %}
     </div>
     <div id="total-amount">
-        <h2>Total: ${{ total_amount }}</h2>
+        <h2>Total: ${{ "%.2f" | format(total_amount) }}</h2>
     </div>
-    <button id="confirm-purchase">Confirm Purchase</button>
+    <button id="confirm-purchase" class="btn btn-primary">Confirm Purchase</button>
 </div>
 
 <script>
     document.getElementById('confirm-purchase').addEventListener('click', function() {
-        fetch('http://127.0.0.1:5000/api/purchase/confirm', {
+        fetch('/purchase/confirm', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

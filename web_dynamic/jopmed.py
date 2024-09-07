@@ -69,10 +69,12 @@ def cart_page():
 
         # Make a request to the API with the user ID in the headers
         headers = {'User-ID': str(user_id)}
-        response = requests.get(f'{API_BASE_URL}/cart', headers=headers, timeout=5)
+        response = requests.get(f'{API_BASE_URL}/cart', headers=headers, cookies=request.cookies, timeout=5)
         response.raise_for_status()
         cart_items = response.json()
-        return render_template('cart.html', cart_items=cart_items)
+        total_amount = sum(item['quantity'] * item['product']['price'] for item in cart_items)
+        app.logger.info(f"Cart items retrieved: {cart_items}")
+        return render_template('cart.html', cart_items=cart_items, total_amount=total_amount)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch cart items: {str(e)}")
         flash(f'Failed to fetch cart items: {str(e)}', 'error')
@@ -95,28 +97,48 @@ def add_to_cart():
 
 @app.route('/cart/remove', methods=['DELETE'])
 def remove_from_cart():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json()
-    data['user_id'] = session['user_id']
-    try:
-        response = requests.delete(f'{API_BASE_URL}/cart/remove', json=data, timeout=5)
-        response.raise_for_status()
-        return jsonify(response.json()), response.status_code
-    except requests.RequestException as e:
-        app.logger.error(f"Failed to remove item from cart: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    user_id = request.headers.get('User-ID')
+    
+    if not user_id:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    item_id = data.get('item_id')
+    if not item_id:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    cart_item = storage.session.query(ShoppingCart).filter(
+        ShoppingCart.user_id == user_id, 
+        ShoppingCart.id == item_id
+    ).first()
+
+    if not cart_item:
+        return jsonify({'error': 'Item not found in cart'}), 404
+
+    storage.delete(cart_item)
+    storage.save()
+    return jsonify({'success': True, 'message': 'Item removed from cart'}), 200
 
 @app.route('/cart/update_cart_item', methods=['POST'])
-def update_cart_item():
+def update_cart():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.json
+    app.logger.debug(f"Received data for cart update: {data}")
+    user_id = session['user_id']
+    product_id = data.get('product_id')
+    quantity_change = data.get('quantity')
 
-    data = request.get_json()
-    data['user_id'] = session['user_id']
+    if not all([user_id, product_id, quantity_change]):
+        return jsonify({'error': 'Invalid data'}), 400
+
     try:
-        response = requests.post(f'{API_BASE_URL}/cart/update_cart_item', json=data, timeout=5)
+        response = requests.post(f'{API_BASE_URL}/cart/update_cart_item', 
+                                 json={'user_id': user_id, 'product_id': product_id, 'quantity': quantity_change},
+                                 headers={'User-ID': str(user_id)},
+                                 cookies=request.cookies,
+                                 timeout=5)
         response.raise_for_status()
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
@@ -208,53 +230,16 @@ def shipping_information():
         flash('Failed to fetch shipping information', 'error')
         return render_template('shipping-information.html', shipping_info=[])
 
-@app.route('/login', strict_slashes=False, methods=['GET', 'POST'])
+@app.route('/login', strict_slashes=False, methods=['GET'])
 def login():
-    if request.method == 'POST':
-        data = request.form
-        try:
-            response = requests.post(f'{API_BASE_URL}/login', data=data, timeout=5)
-            response.raise_for_status()
-            user_data = response.json()
-            session['user_id'] = user_data['user_id']
-            session['username'] = user_data['username']
-            session.permanent = True
-            flash('Login successful', 'success')
-            return redirect(url_for('jopmed'))
-        except requests.RequestException as e:
-            app.logger.error(f"Failed to log in: {str(e)}")
-            flash('Failed to log in. Please try again.', 'error')
-            return render_template('login.html')
     return render_template('login.html')
 
-@app.route('/logout', strict_slashes=False, methods=['GET', 'POST'])
-# @login_required
+@app.route('/logout', strict_slashes=False, methods=['GET'])
 def logout():
-    try:
-        response = requests.post(f'{API_BASE_URL}/logout', timeout=5)
-        response.raise_for_status()
-        flash('Logged out successfully', 'success')
-        if request.method == 'POST':
-            return jsonify({'message': 'Logged out successfully'}), 200
-        return redirect(url_for('login'))
-    except requests.RequestException as e:
-        app.logger.error(f"Failed to log out: {str(e)}")
-        flash('Failed to log out. Please try again.', 'error')
-        return redirect(url_for('login'))
+    return render_template('logout.html')
 
-@app.route('/register', strict_slashes=False, methods=['GET', 'POST'])
+@app.route('/register', strict_slashes=False, methods=['GET'])
 def register():
-    if request.method == 'POST':
-        data = request.form
-        try:
-            response = requests.post(f'{API_BASE_URL}/register', data=data, timeout=5)
-            response.raise_for_status()
-            flash('Registration successful. Please log in.', 'success')
-            return redirect(url_for('login'))
-        except requests.RequestException as e:
-            app.logger.error(f"Failed to register: {str(e)}")
-            flash('Failed to register. Please try again.', 'error')
-            return render_template('register.html')
     return render_template('register.html')
 
 @app.route('/checkout', methods=['GET'])
@@ -274,6 +259,7 @@ def checkout():
         app.logger.error(f"Failed to fetch checkout data: {str(e)}")
         flash('Failed to load checkout. Please try again later.', 'error')
         return redirect(url_for('cart_page'))
+
 
 
 @app.route('/register-payment-method', strict_slashes=False, methods=['GET', 'POST'])

@@ -54,7 +54,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session to last for 7 days
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -134,20 +134,16 @@ def role_required(role_name):
 
 # Authentication and User Management
 @app.route('/api/login', methods=['POST'])
-def login():
-    data = request.form
-    logging.debug(f"Login data: {data}")
+def api_login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
     
-    if not data or 'username' not in data or 'password' not in data:
-        return jsonify({'error': 'Invalid data'}), 400
-    
-    users = storage.filter(User, username=data['username'])
-    user = users[0] if users else None
+    user = storage.session.query(User).filter_by(username=username).first()
     
     if user and check_password_hash(user.password_hash, data['password']):
         session['user_id'] = user.id
         session['username'] = user.username
-        session.permanent = True
         logging.info(f"User {user.id} logged in successfully")
         return jsonify({'success': True, 'user_id': user.id, 'username': user.username}), 200
     else:
@@ -155,42 +151,35 @@ def login():
 
 
 @app.route('/api/logout', methods=['POST'])
-@login_required
-def logout():
-    session.pop('user_id', None)
-    session.pop('username', None)
-    return jsonify({'message': 'Logged out successfully'}), 200
+def api_logout():
+    try:
+        session.clear()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        app.logger.error(f"Failed to log out: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to log out'}), 500
 
 
 @app.route('/api/register', methods=['POST'])
-def register():
-    if request.is_json:
-        data = request.get_json()
-    else:
-        data = request.form
+def api_register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    email = data.get('email')
 
-    if not data or 'username' not in data or 'password' not in data or 'email' not in data:
-        return jsonify({'error': 'Invalid data. Please fill all required fields.'}), 400
+    if not all([username, password, email]):
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
-    # Check if username already exists
-    if storage.get_by_username(User, data['username']):
-        return jsonify({'error': 'Username already exists'}), 400
+    hashed_password = generate_password_hash(password)
+    new_user = User(username=username, password=hashed_password, email=email)
 
-    # Check if email already exists
-    if storage.get_by_email(User, data['email']):
-        return jsonify({'error': 'Email already exists'}), 400
-
-    # Create new user
-    user = User(
-        username=data['username'],
-        email=data['email'],
-        first_name=data.get('first_name', ''),
-        last_name=data.get('last_name', '')
-    )
-    user.set_password(data['password'])
-    storage.new(user)
-    storage.save()
-    return jsonify({'success': True}), 201
+    try:
+        storage.new(new_user)
+        storage.save()
+        return jsonify({'success': True, 'message': 'Registration successful'}), 201
+    except IntegrityError:
+        storage.rollback()
+        return jsonify({'success': False, 'error': 'Username or email already exists'}), 409
 
 
 def get_current_user():
@@ -1565,29 +1554,13 @@ def remove_from_wishlist():
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
     logging.info("Entering get_cart function")
-    logging.debug(f"Session contents: {session}")
-    logging.debug(f"Request headers: {request.headers}")
-    logging.debug(f"Request args: {request.args}")
-
-    # Try to get user_id from session
-    user_id = session.get('user_id')
-    logging.info(f"User ID from session: {user_id}")
-    
-    # If not in session, try to get from request headers
-    if not user_id:
-        user_id = request.headers.get('User-ID')
-        logging.info(f"User ID from headers: {user_id}")
-    
-    # If still not found, try to get from query parameters
-    if not user_id:
-        user_id = request.args.get('user_id')
-        logging.info(f"User ID from query params: {user_id}")
+    user_id = request.headers.get('User-ID')
     
     if not user_id:
-        logging.warning("User ID not found in session, headers, or query params")
+        logging.warning("User ID not found in headers")
         return jsonify({'error': 'Unauthorized. User ID not provided.'}), 401
 
-    logging.info(f"Final User ID: {user_id}")
+    logging.info(f"User ID from headers: {user_id}")
 
     user = storage.get(User, user_id)
     if not user:
@@ -1595,7 +1568,21 @@ def get_cart():
         return jsonify({'error': 'User not found'}), 404
 
     cart_items = storage.filter(ShoppingCart, user_id=user_id)
-    cart_data = [item.to_dict() for item in cart_items]
+    cart_data = []
+    for item in cart_items:
+        product = storage.get(Products, item.product_id)
+        if product:
+            cart_data.append({
+                'id': item.id,
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'price': product.price,
+                    'image_url': product.image_url
+                },
+                'quantity': item.quantity
+            })
+    
     logging.info(f"Cart data retrieved: {cart_data}")
     return jsonify(cart_data), 200
 
@@ -1603,31 +1590,49 @@ def get_cart():
 @app.route('/api/cart/add', methods=['POST'])
 def add_to_cart():
     data = request.get_json()
-    if 'user_id' not in session:
+    user_id = request.headers.get('User-ID')
+    
+    if not user_id:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    user_id = session['user_id']
-    item_id = data.get('item_id')
-    item_type = data.get('item_type')
+    product_id = data.get('product_id')
     quantity = data.get('quantity', 1)
 
-    if item_type == 'product':
-        item = storage.get(Products, item_id)
-    elif item_type == 'service':
-        item = storage.get(Service, item_id)
+    if not all([user_id, product_id, quantity]):
+        return jsonify({'error': 'Invalid data'}), 400
+
+    try:
+        user_id = int(user_id)
+        product_id = int(product_id)
+        quantity = int(quantity)
+    except ValueError:
+        return jsonify({'error': 'Invalid data types'}), 400
+
+    user = storage.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    product = storage.get(Products, product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    cart_item = storage.session.query(ShoppingCart).filter(
+        ShoppingCart.user_id == user_id, 
+        ShoppingCart.product_id == product_id
+    ).first()
+
+    if cart_item:
+        cart_item.quantity += quantity
+        if cart_item.quantity <= 0:
+            storage.delete(cart_item)
+        else:
+            storage.save()
     else:
-        return jsonify({'error': 'Invalid item type'}), 400
+        if quantity > 0:
+            cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=quantity)
+            storage.new(cart_item)
+            storage.save()
 
-    if not item:
-        return jsonify({'error': 'Item not found'}), 404
-
-    cart_item = ShoppingCart(user_id=user_id, quantity=quantity)
-    if item_type == 'product':
-        cart_item.product_id = item_id
-    else:
-        cart_item.service_id = item_id
-
-    storage.new(cart_item)
     storage.save()
     return jsonify({'success': True, 'message': 'Item added to cart'}), 200
 
@@ -1653,21 +1658,31 @@ def remove_from_cart():
 @app.route('/api/cart/update_cart_item', methods=['POST'])
 def update_cart_item():
     data = request.get_json()
-    if 'user_id' not in session:
+    user_id = request.headers.get('User-ID')
+    
+    if not user_id:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    user_id = session['user_id']
-    item_id = data.get('item_id')
+    product_id = data.get('product_id')
     quantity_change = data.get('quantity')
     
-    cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
-    if not cart_item:
-        return jsonify({'error': 'Item not found in cart'}), 404
+    if not all([user_id, product_id, quantity_change]):
+        return jsonify({'error': 'Invalid data'}), 400
     
-    if isinstance(quantity_change, int):
-        cart_item.quantity += quantity_change
-    else:
-        return jsonify({'error': 'Invalid quantity'}), 400
+    user = storage.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    cart_item = storage.session.query(ShoppingCart).filter(
+        ShoppingCart.user_id == user_id, 
+        ShoppingCart.product_id == product_id
+    ).first()
+    
+    if not cart_item:
+        cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=0)
+        storage.new(cart_item)
+    
+    cart_item.quantity += quantity_change
     
     if cart_item.quantity <= 0:
         storage.delete(cart_item)

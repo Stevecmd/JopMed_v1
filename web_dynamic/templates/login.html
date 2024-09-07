@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='styles/login.css') }}">
 <div class="login-container">
     <h1>Login</h1>
-    <form method="POST" action="{{ url_for('login') }}" class="login-form">
+    <form id="login-form" class="login-form">
         <div class="form-group">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>
@@ -21,12 +21,4 @@
     </form>
 </div>
 
-{% if session.get('login_failed') %}
-<script>
-    $(document).ready(function() {
-        alert('Invalid username or password. Please try again.');
-        {{ session.pop('login_failed') }}
-    });
-</script>
-{% endif %}
 {% endblock %}
