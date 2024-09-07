@@ -1593,9 +1593,17 @@ def add_to_cart():
 
     try:
         if product_id:
-            cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=quantity)
+            cart_item = storage.session.query(ShoppingCart).filter_by(user_id=user_id, product_id=product_id).first()
+            if cart_item:
+                cart_item.quantity += quantity
+            else:
+                cart_item = ShoppingCart(user_id=user_id, product_id=product_id, quantity=quantity)
         elif service_id:
-            cart_item = ShoppingCart(user_id=user_id, service_id=service_id, quantity=quantity)
+            cart_item = storage.session.query(ShoppingCart).filter_by(user_id=user_id, service_id=service_id).first()
+            if cart_item:
+                cart_item.quantity += quantity
+            else:
+                cart_item = ShoppingCart(user_id=user_id, service_id=service_id, quantity=quantity)
         
         storage.new(cart_item)
         storage.save()
