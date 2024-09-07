@@ -1566,12 +1566,40 @@ def remove_from_wishlist():
 
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
-    if 'user_id' not in session:
-        return jsonify({'message': 'Login to shop'}), 401
+    logging.info("Entering get_cart function")
+    logging.debug(f"Session contents: {session}")
+    logging.debug(f"Request headers: {request.headers}")
+    logging.debug(f"Request args: {request.args}")
+
+    # Try to get user_id from session
+    user_id = session.get('user_id')
+    logging.info(f"User ID from session: {user_id}")
     
-    user_id = session['user_id']
-    cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
-    return jsonify([item.to_dict() for item in cart_items]), 200
+    # If not in session, try to get from request headers
+    if not user_id:
+        user_id = request.headers.get('User-ID')
+        logging.info(f"User ID from headers: {user_id}")
+    
+    # If still not found, try to get from query parameters
+    if not user_id:
+        user_id = request.args.get('user_id')
+        logging.info(f"User ID from query params: {user_id}")
+    
+    if not user_id:
+        logging.warning("User ID not found in session, headers, or query params")
+        return jsonify({'error': 'Unauthorized. User ID not provided.'}), 401
+
+    logging.info(f"Final User ID: {user_id}")
+
+    user = storage.get(User, user_id)
+    if not user:
+        logging.warning(f"User with ID {user_id} not found in storage")
+        return jsonify({'error': 'User not found'}), 404
+
+    cart_items = storage.filter(ShoppingCart, user_id=user_id)
+    cart_data = [item.to_dict() for item in cart_items]
+    logging.info(f"Cart data retrieved: {cart_data}")
+    return jsonify(cart_data), 200
 
 
 @app.route('/api/cart/add', methods=['POST'])

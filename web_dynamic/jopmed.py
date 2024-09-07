@@ -50,10 +50,19 @@ def account():
         return redirect(url_for('login'))
 
 
+
 @app.route('/cart', methods=['GET'])
 def cart_page():
     try:
-        response = requests.get(f'{API_BASE_URL}/cart', timeout=5)
+        # Get the session ID
+        user_id = session.get('user_id')
+        if not user_id:
+            flash('Please log in to view your cart', 'error')
+            return redirect(url_for('login'))
+
+        # Make a request to the API with the user ID in the headers
+        headers = {'User-ID': str(user_id)}
+        response = requests.get(f'{API_BASE_URL}/cart', headers=headers, timeout=5)
         response.raise_for_status()
         cart_items = response.json()
         return render_template('cart.html', cart_items=cart_items)
@@ -64,33 +73,45 @@ def cart_page():
 
 @app.route('/cart/add', methods=['POST'])
 def add_to_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
     data = request.get_json()
+    data['user_id'] = session['user_id']
     try:
         response = requests.post(f'{API_BASE_URL}/cart/add', json=data, timeout=5)
         response.raise_for_status()
-        return jsonify({"success": True, "message": "Item added to cart"}), 200
+        return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         app.logger.error(f"Failed to add item to cart: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/cart/remove', methods=['DELETE'])
 def remove_from_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
     data = request.get_json()
+    data['user_id'] = session['user_id']
     try:
         response = requests.delete(f'{API_BASE_URL}/cart/remove', json=data, timeout=5)
         response.raise_for_status()
-        return jsonify({'message': 'Item removed from cart'}), 200
+        return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         app.logger.error(f"Failed to remove item from cart: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/cart/update_cart_item', methods=['POST'])
 def update_cart_item():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
     data = request.get_json()
+    data['user_id'] = session['user_id']
     try:
         response = requests.post(f'{API_BASE_URL}/cart/update_cart_item', json=data, timeout=5)
         response.raise_for_status()
-        return jsonify({'success': True}), 200
+        return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         app.logger.error(f"Error updating cart: {str(e)}")
         return jsonify({'error': str(e)}), 500

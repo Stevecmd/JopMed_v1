@@ -18,7 +18,7 @@
         const totalAmountElement = document.getElementById('total-amount');
 
         function loadCart() {
-            fetch('http://127.0.0.1:5000/api/cart', {
+            fetch('/api/cart', {
                 credentials: 'include'
             })
             .then(response => {
@@ -34,6 +34,11 @@
                 if (!Array.isArray(cart)) {
                     console.error('Invalid cart data:', cart);
                     cartItemsContainer.innerHTML = '<p>Error loading cart. Please try again later.</p>';
+                    return;
+                }
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p>Your cart is empty.</p>';
+                    totalAmountElement.textContent = '0.00';
                     return;
                 }
                 cartItemsContainer.innerHTML = '';
@@ -74,7 +79,7 @@
         });
 
         function removeFromCart(itemId) {
-            fetch('http://127.0.0.1:5000/api/cart/remove', {
+            fetch('/api/cart/remove', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -98,6 +103,37 @@
         document.getElementById('checkout-button').addEventListener('click', function() {
             window.location.href = '/checkout';
         });
+
+        function updateQuantity(itemId, change) {
+            fetch('/cart/update_cart_item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    quantity: change
+                }),
+                credentials: 'include'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    loadCart();  // Reload the entire cart to reflect changes
+                } else {
+                    alert(data.error || 'Failed to update cart.');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating cart:', error);
+                alert('Failed to update cart. Please try again.');
+            });
+        }
     });
 </script>
 {% endblock %}
