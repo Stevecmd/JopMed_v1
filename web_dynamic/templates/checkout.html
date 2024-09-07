@@ -21,5 +21,19 @@
     <button id="confirm-purchase" class="btn btn-primary">Confirm Purchase</button>
 </div>
 
+<!-- Payment Modal -->
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Payment Details</h2>
+        <p>Please send payment to:</p>
+        <p><strong>Account Number:</strong> 1234567890</p>
+        <p><strong>Bank Name:</strong> JopMed Bank</p>
+        <p><strong>Amount:</strong> $<span id="modalTotalAmount"></span></p>
+        <button id="confirmPayment" class="btn btn-success">Confirm Payment</button>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='scripts/checkout.js') }}"></script>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/checkout-modal.css') }}">
 {% endblock %}
