@@ -43,7 +43,7 @@
         });
 
         function updateCart(productId, change) {
-            fetch('/cart/update_cart_item', {
+            fetch('http://127.0.0.1:5000/api/update_cart_item', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -86,7 +86,7 @@
         }
 
         function initializeCartQuantities() {
-            fetch('/cart', {
+            fetch('http://127.0.0.1:5000/api/cart', {
                 credentials: 'include'
             })
             .then(response => response.json())

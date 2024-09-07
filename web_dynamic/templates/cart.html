@@ -18,7 +18,7 @@
         const totalAmountElement = document.getElementById('total-amount');
 
         function loadCart() {
-            fetch('/api/cart', {
+            fetch('http://127.0.0.1:5000/api/cart', {
                 credentials: 'include'
             })
             .then(response => {
@@ -74,7 +74,7 @@
         });
 
         function removeFromCart(itemId) {
-            fetch('/api/cart/remove', {
+            fetch('http://127.0.0.1:5000/api/cart/remove', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

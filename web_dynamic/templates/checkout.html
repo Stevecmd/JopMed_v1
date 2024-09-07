@@ -22,7 +22,7 @@
 
 <script>
     document.getElementById('confirm-purchase').addEventListener('click', function() {
-        fetch('/api/v1/purchase/confirm', {
+        fetch('http://127.0.0.1:5000/api/purchase/confirm', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
