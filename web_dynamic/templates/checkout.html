@@ -12,14 +12,12 @@
                 <div class="cart-item-details">
                     <h3>{{ item.product.name if item.product else item.service.name }}</h3>
                     <p>Quantity: {{ item.quantity }}</p>
-                    <p>Price: ${{ "%.2f" | format((item.product.price if item.product else item.service.price) * item.quantity) }}</p>
+                    <p>Price: ${{ "%.2f" | format((item.product.price|float if item.product else item.service.price|float) * item.quantity) }}</p>
                 </div>
             </div>
         {% endfor %}
     </div>
-    <div id="total-amount">
-        <h2>Total: ${{ "%.2f" | format(total_amount) }}</h2>
-    </div>
+
     <button id="confirm-purchase" class="btn btn-primary">Confirm Purchase</button>
 </div>
 

@@ -7,9 +7,11 @@ from models.users import User
 from models.shopping_cart import ShoppingCart
 from models.products import Products
 from models.service import Service
+from datetime import timedelta
+import requests
 import models
 import logging
-from datetime import timedelta
+
 
 app = Flask(__name__)
 app.secret_key = 'jopmed_secret_key'
@@ -19,6 +21,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session to last for 7 days
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# app_views = Blueprint('app_views', __name__, url_prefix='/api')
 
 API_BASE_URL = 'http://localhost:5000/api'
 
@@ -60,89 +63,95 @@ def account():
 
 @app.route('/cart', methods=['GET'])
 def cart_page():
-    try:
-        # Get the session ID
-        user_id = session.get('user_id')
-        if not user_id:
-            flash('Please log in to view your cart', 'error')
-            return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please log in to view your cart.', 'error')
+        return redirect(url_for('login'))
 
-        # Make a request to the API with the user ID in the headers
-        headers = {'User-ID': str(user_id)}
-        response = requests.get(f'{API_BASE_URL}/cart', headers=headers, cookies=request.cookies, timeout=5)
+    try:
+        response = requests.get(f'{API_BASE_URL}/cart', headers={'User-ID': session['user_id']}, timeout=5)
         response.raise_for_status()
         cart_items = response.json()
-        total_amount = sum(item['quantity'] * item['product']['price'] for item in cart_items)
-        app.logger.info(f"Cart items retrieved: {cart_items}")
-        return render_template('cart.html', cart_items=cart_items, total_amount=total_amount)
+        return render_template('cart.html', cart_items=cart_items)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch cart items: {str(e)}")
-        flash(f'Failed to fetch cart items: {str(e)}', 'error')
+        flash('Failed to fetch cart items. Please try again later.', 'error')
         return render_template('cart.html', cart_items=[])
 
 @app.route('/cart/add', methods=['POST'])
 def add_to_cart():
     if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
+        return jsonify({'error': 'User not logged in'}), 401
 
     data = request.get_json()
-    data['user_id'] = session['user_id']
+    user_id = session['user_id']
+    product_id = data.get('product_id')
+    service_id = data.get('service_id')
+    quantity = data.get('quantity', 1)
+
+    if not (product_id or service_id) or not quantity:
+        return jsonify({'error': 'Missing required fields'}), 400
+
     try:
-        response = requests.post(f'{API_BASE_URL}/cart/add', json=data, timeout=5)
+        response = requests.post(f'{API_BASE_URL}/cart/add', json={
+            'user_id': user_id,
+            'product_id': product_id,
+            'service_id': service_id,
+            'quantity': quantity
+        }, timeout=5)
         response.raise_for_status()
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
-        app.logger.error(f"Failed to add item to cart: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"Failed to add to cart: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/cart/remove', methods=['DELETE'])
-def remove_from_cart():
-    data = request.get_json()
-    user_id = request.headers.get('User-ID')
-    
-    if not user_id:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    item_id = data.get('item_id')
-    if not item_id:
-        return jsonify({'error': 'Invalid data'}), 400
 
-    cart_item = storage.session.query(ShoppingCart).filter(
-        ShoppingCart.user_id == user_id, 
-        ShoppingCart.id == item_id
-    ).first()
-
-    if not cart_item:
-        return jsonify({'error': 'Item not found in cart'}), 404
-
-    storage.delete(cart_item)
-    storage.save()
-    return jsonify({'success': True, 'message': 'Item removed from cart'}), 200
-
-@app.route('/cart/update_cart_item', methods=['POST'])
+@app.route('/cart/update', methods=['POST'])
 def update_cart():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.json
-    app.logger.debug(f"Received data for cart update: {data}")
-    user_id = session['user_id']
-    product_id = data.get('product_id')
-    quantity_change = data.get('quantity')
 
-    if not all([user_id, product_id, quantity_change]):
+    data = request.get_json()
+    user_id = session['user_id']
+    item_id = data.get('item_id')
+    quantity = data.get('quantity')
+
+    if not item_id or quantity is None:
         return jsonify({'error': 'Invalid data'}), 400
 
     try:
-        response = requests.post(f'{API_BASE_URL}/cart/update_cart_item', 
-                                 json={'user_id': user_id, 'product_id': product_id, 'quantity': quantity_change},
-                                 headers={'User-ID': str(user_id)},
-                                 cookies=request.cookies,
-                                 timeout=5)
+        response = requests.post(f'{API_BASE_URL}/cart/update', json={
+            'user_id': user_id,
+            'item_id': item_id,
+            'quantity': quantity
+        }, timeout=5)
         response.raise_for_status()
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
-        app.logger.error(f"Error updating cart: {str(e)}")
+        app.logger.error(f"Failed to update cart: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/cart/remove', methods=['DELETE'])
+def remove_from_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    user_id = session['user_id']
+    item_id = data.get('item_id')
+
+    if not item_id:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    try:
+        response = requests.delete(f'{API_BASE_URL}/cart/remove', json={
+            'user_id': user_id,
+            'item_id': item_id
+        }, timeout=5)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to remove from cart: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -180,11 +189,17 @@ def products():
         response = requests.get(f'{API_BASE_URL}/products', timeout=5)
         response.raise_for_status()
         products = response.json()
+        app.logger.debug(f"Products fetched: {products}")
         return render_template('products.html', products=products)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch products: {str(e)}")
         flash('Failed to fetch products. Please try again later.', 'error')
         return render_template('products.html', products=[])
+
+@app.route('/api/products', methods=['GET'])
+def get_products():
+    products = storage.all(Products).values()
+    return jsonify([product.to_dict(include_image=True) for product in products])
 
 @app.route('/admin', strict_slashes=False)
 def admin():
@@ -199,7 +214,7 @@ def reviews():
         return render_template('reviews.html', reviews=reviews)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch reviews: {str(e)}")
-        flash('Failed to fetch reviews', 'error')
+        flash('Failed to fetch reviews. Please try again later.', 'error')
         return render_template('reviews.html', reviews=[])
 
 @app.route('/services', strict_slashes=False)
@@ -211,24 +226,12 @@ def services():
         return render_template('services.html', services=services)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch services: {str(e)}")
-        flash('Failed to fetch services from the server. Showing local data.', 'warning')
-        services = [
-            {"id": 1, "name": "Service 1", "description": "Description 1"},
-            {"id": 2, "name": "Service 2", "description": "Description 2"},
-        ]
-        return render_template('services.html', services=services)
+        flash('Failed to fetch services. Please try again later.', 'error')
+        return render_template('services.html', services=[])
 
 @app.route('/shipping-information', strict_slashes=False)
 def shipping_information():
-    try:
-        response = requests.get(f'{API_BASE_URL}/shipping_information', timeout=5)
-        response.raise_for_status()
-        shipping_info = response.json()
-        return render_template('shipping-information.html', shipping_info=shipping_info)
-    except requests.RequestException as e:
-        app.logger.error(f"Failed to fetch shipping information: {str(e)}")
-        flash('Failed to fetch shipping information', 'error')
-        return render_template('shipping-information.html', shipping_info=[])
+    return render_template('shipping-information.html', shipping_info=[])
 
 @app.route('/login', strict_slashes=False, methods=['GET'])
 def login():
@@ -236,7 +239,10 @@ def login():
 
 @app.route('/logout', strict_slashes=False, methods=['GET'])
 def logout():
-    return render_template('logout.html')
+    # return render_template('logout.html')
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
 
 @app.route('/register', strict_slashes=False, methods=['GET'])
 def register():
@@ -244,21 +250,20 @@ def register():
 
 @app.route('/checkout', methods=['GET'])
 def checkout():
+    if 'user_id' not in session:
+        flash('Please log in to proceed to checkout.', 'error')
+        return redirect(url_for('login'))
+
     try:
-        response = requests.get(f'{API_BASE_URL}/cart', timeout=5)
+        headers = {'User-ID': str(session['user_id'])}
+        response = requests.get(f'{API_BASE_URL}/cart', headers=headers, timeout=5)
         response.raise_for_status()
         cart_items = response.json()
-        
-        if not cart_items:
-            flash('Your cart is empty', 'error')
-            return redirect(url_for('cart_page'))
-        
-        total_amount = sum(item['product']['price'] * item['quantity'] for item in cart_items if item.get('product'))
-        return render_template('checkout.html', cart_items=cart_items, total_amount=total_amount)
+        return render_template('checkout.html', cart_items=cart_items)
     except requests.RequestException as e:
-        app.logger.error(f"Failed to fetch checkout data: {str(e)}")
-        flash('Failed to load checkout. Please try again later.', 'error')
-        return redirect(url_for('cart_page'))
+        app.logger.error(f"Failed to fetch cart items for checkout: {str(e)}")
+        flash('Failed to fetch cart items. Please try again later.', 'error')
+        return render_template('checkout.html', cart_items=[])
 
 
 
