@@ -37,6 +37,7 @@
                         <li class="nav__item"><a href="{{ url_for('about') }}" class="{% if request.path == url_for('about') %}active{% endif %}">About</a></li>
                         <li class="nav__item"><a href="{{ url_for('services') }}" class="{% if request.path == url_for('services') %}active{% endif %}">Services</a></li>
                         <li class="nav__item"><a href="{{ url_for('products') }}" class="{% if request.path == url_for('products') %}active{% endif %}">Products</a></li>
+                        <li class="nav__item"><a href="{{ url_for('view_wishlist') }}" class="{% if request.path == url_for('view_wishlist') %}active{% endif %}">Wishlist</a></li>
                         
                     </ul>
                 </nav>
@@ -92,7 +93,7 @@
     <!-- Checkout Button -->
     <button class="checkout-btn" onclick="location.href='{{ url_for('checkout') }}';">
         <i class="fas fa-shopping-cart"></i>
-        Checkout
+        View Cart
     </button>
 
     <footer>
