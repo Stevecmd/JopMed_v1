@@ -160,27 +160,43 @@ def api_logout():
         return jsonify({'success': False, 'error': 'Failed to log out'}), 500
 
 
-@app.route('/api/register', methods=['POST'])
+@app.route('/api/register', methods=['PUT'])
 def api_register():
     data = request.get_json()
     username = data.get('username')
-    password = data.get('password')
     email = data.get('email')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    password = data.get('password')
 
-    if not all([username, password, email]):
-        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+    if not all([username, email, first_name, last_name, password]):
+        return jsonify({'error': 'All fields are required'}), 400
 
-    hashed_password = generate_password_hash(password)
-    new_user = User(username=username, password=hashed_password, email=email)
+    # Check if the username or email already exists
+    existing_user = storage.session.query(User).filter(
+        (User.username == username) | (User.email == email)
+    ).first()
+
+    if existing_user:
+        return jsonify({'error': 'Username or email already exists'}), 409
+
+    # Create a new user
+    password_hash = generate_password_hash(password)
+    new_user = User(
+        username=username,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        password_hash=password_hash
+    )
 
     try:
         storage.new(new_user)
         storage.save()
-        return jsonify({'success': True, 'message': 'Registration successful'}), 201
+        return jsonify({'success': True, 'user_id': new_user.id, 'message': 'Registration successful'}), 201
     except IntegrityError:
-        storage.rollback()
-        return jsonify({'success': False, 'error': 'Username or email already exists'}), 409
-
+        app.logger.error(f"Failed to register user: {str(e)}")
+        return jsonify({'error': 'Failed to register user'}), 500
 
 def get_current_user():
     if 'user_id' in session:

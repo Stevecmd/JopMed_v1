@@ -16,43 +16,21 @@
             <input type="email" id="email" name="email" required>
         </div>
         <div class="form-group">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" required>
+        </div>
+        <div class="form-group">
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" required>
+        </div>
+        <div class="form-group">
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
         </div>
         <div class="form-group button-group">
-            <button type="submit" class="register-button">Register</button>
+            <button type="submit" class="register-button">Sign Up</button>
         </div>
     </form>
 </div>
-
-<script>
-document.getElementById('register-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const data = {
-        username: formData.get('username'),
-        email: formData.get('email'),
-        password: formData.get('password')
-    };
-
-    fetch('/api/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data),
-        credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Registration successful! Please log in.');
-            window.location.href = '/login';
-        } else {
-            alert(data.error || 'Registration failed. Please try again.');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-});
-</script>
+<script src="{{ url_for('static', filename='scripts/register.js') }}"></script>
 {% endblock %}
