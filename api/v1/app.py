@@ -1714,74 +1714,72 @@ def register_payment_method():
 def confirm_purchase():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
-    
+
+    data = request.get_json()
+    user_id = data.get('user_id')
+
     user_id = session['user_id']
-    cart_items = storage.filter(ShoppingCart, user_id=user_id)
+    user = storage.get(User, user_id)
+    cart_items = storage.session.query(ShoppingCart).filter_by(user_id=user_id).all()
     
     if not cart_items:
         return jsonify({'error': 'Cart is empty'}), 400
     
-    total_amount = sum(item.product.price * item.quantity for item in cart_items if item.product)
-    total_amount += sum(item.service.price * item.quantity for item in cart_items if item.service)
-    
-    # Create order
-    new_order = Orders(
-        user_id=user_id,
-        address_id=1,
-        status='pending',
-        payment_method='credit_card',
-        total_amount=total_amount
-    )
-    storage.new(new_order)
-    
-    # Create order items
-    for cart_item in cart_items:
-        if cart_item.product:
-            order_item = Order_Items(
-                order_id=new_order.id,
-                product_id=cart_item.product_id,
-                quantity=cart_item.quantity,
-                price=cart_item.product.price
-            )
-        else:
-            order_item = Order_Items(
-                order_id=new_order.id,
-                service_id=cart_item.service_id,
-                quantity=cart_item.quantity,
-                price=cart_item.service.price
-            )
-        storage.new(order_item)
-    
-    # Clear cart
-    for item in cart_items:
-        storage.delete(item)
-    
-    storage.save()
-    
-    # Generate receipt
-    receipt_url = url_for('generate_receipt', order_id=new_order.id)
-    
-    return jsonify({'success': True, 'receipt_url': receipt_url}), 200
+    try:
+        # Generate PDF receipt
+        receipt_buffer = generate_receipt(cart_items, user)
+
+        # Mark the receipt as paid (this is a placeholder, implement as needed)
+        # For example, create an Order and mark it as paid
+        order = Orders(user_id=user_id, status='paid', total_amount=sum(item.quantity * (item.product.price if item.product else item.service.price) for item in cart_items))
+        storage.new(order)
+        storage.save()
+
+        # Clear the cart
+        for item in cart_items:
+            storage.delete(item)
+        storage.save()
+
+        # Send the PDF receipt to the client
+        response = make_response(send_file(receipt_buffer, as_attachment=True, download_name='receipt.pdf', mimetype='application/pdf'))
+        response.headers['Content-Disposition'] = 'attachment; filename=receipt.pdf'
+
+        # Flash message and redirect to homepage
+        flash('Thank you for shopping with us!', 'success')
+        return response
+    except Exception as e:
+        app.logger.error(f"Failed to confirm purchase: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/receipt/<int:order_id>')
-def generate_receipt(order_id):
-    order = storage.get(Orders, order_id)
-    if not order:
-        return jsonify({'error': 'Order not found'}), 404
-
+def generate_receipt(cart_items, user):
     buffer = BytesIO()
-    p = canvas.Canvas(buffer)
-    
-    # Add receipt content
-    p.drawString(100, 750, f"Order Receipt #{order.id}")
-    p.drawString(100, 700, f"Total Amount: ${order.total_amount:.2f}")
-    p.drawString(100, 650, f"Date: {order.created_at}")
-    
-    p.showPage()
-    p.save()
-    
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    c.drawString(100, height - 50, f"Receipt for {user.username}")
+    c.drawString(100, height - 70, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    y = height - 100
+    total_amount = 0
+
+    for item in cart_items:
+        product_or_service = item.product if item.product else item.service
+        name = product_or_service.name
+        quantity = item.quantity
+        price = product_or_service.price
+        total_price = quantity * price
+        total_amount += total_price
+
+        c.drawString(100, y, f"{name} - Quantity: {quantity} - Price: ${price:.2f} - Total: ${total_price:.2f}")
+        y -= 20
+
+    c.drawString(100, y - 20, f"Total Amount: ${total_amount:.2f}")
+    c.showPage()
+    c.save()
+
     buffer.seek(0)
-    return send_file(buffer, as_attachment=True, download_name=f"receipt_{order.id}.pdf", mimetype='application/pdf')
+    return buffer
 
 
 @app.route('/api/check_login', methods=['GET'])

@@ -105,4 +105,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     initializeCartQuantities();
+
+    function addToCart(productId, name, price) {
+        const isLoggedIn = document.body.classList.contains('logged-in');
+        const quantity = 1; // Or however you determine the quantity
+
+        if (isLoggedIn) {
+            // Send request to server
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ product_id: productId, quantity: quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Item added to cart');
+                    document.dispatchEvent(new Event('cartUpdated'));
+                } else {
+                    alert('Failed to add item to cart');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        } else {
+            // Handle cart locally
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            let existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({ id: productId, name: name, price: price, quantity: quantity });
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert('Item added to cart');
+            document.dispatchEvent(new Event('cartUpdated'));
+        }
+    }
+
 });
+

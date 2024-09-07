@@ -63,46 +63,23 @@ def account():
 
 @app.route('/cart', methods=['GET'])
 def cart_page():
-    if 'user_id' not in session:
-        flash('Please log in to view your cart.', 'error')
-        return redirect(url_for('login'))
-
-    try:
-        response = requests.get(f'{API_BASE_URL}/cart', headers={'User-ID': session['user_id']}, timeout=5)
-        response.raise_for_status()
-        cart_items = response.json()
-        return render_template('cart.html', cart_items=cart_items)
-    except requests.RequestException as e:
-        app.logger.error(f"Failed to fetch cart items: {str(e)}")
-        flash('Failed to fetch cart items. Please try again later.', 'error')
-        return render_template('cart.html', cart_items=[])
+    return render_template('cart.html')
 
 @app.route('/cart/add', methods=['POST'])
 def add_to_cart():
-    if 'user_id' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
-
     data = request.get_json()
-    user_id = session['user_id']
-    product_id = data.get('product_id')
-    service_id = data.get('service_id')
-    quantity = data.get('quantity', 1)
-
-    if not (product_id or service_id) or not quantity:
-        return jsonify({'error': 'Missing required fields'}), 400
-
-    try:
-        response = requests.post(f'{API_BASE_URL}/cart/add', json={
-            'user_id': user_id,
-            'product_id': product_id,
-            'service_id': service_id,
-            'quantity': quantity
-        }, timeout=5)
-        response.raise_for_status()
-        return jsonify(response.json()), response.status_code
-    except requests.RequestException as e:
-        app.logger.error(f"Failed to add to cart: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    if 'user_id' in session:
+        # Handle logged-in user (server-side cart)
+        try:
+            response = requests.post(f'{API_BASE_URL}/cart/add', json=data, timeout=5)
+            response.raise_for_status()
+            return jsonify({'success': True}), 200
+        except requests.RequestException as e:
+            app.logger.error(f"Failed to add to cart: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    else:
+        # For non-logged-in users, the cart will be managed client-side
+        return jsonify({'success': True}), 200
 
 
 @app.route('/cart/update', methods=['POST'])
@@ -305,6 +282,44 @@ def register_payment_method():
             flash('Failed to register payment method. Please try again.', 'error')
             return render_template('register-payment-method.html')
     return render_template('register-payment-method.html')
+
+@app.route('/purchase/confirm', methods=['POST'])
+def confirm_purchase():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    user_id = session['user_id']
+    user = storage.get(User, user_id)
+    cart_items = storage.session.query(ShoppingCart).filter_by(user_id=user_id).all()
+
+    if not cart_items:
+        return jsonify({'error': 'Cart is empty'}), 400
+
+    try:
+        # Generate PDF receipt
+        receipt_buffer = generate_receipt(cart_items, user)
+
+        # Mark the receipt as paid (this is a placeholder, implement as needed)
+        # For example, create an Order and mark it as paid
+        order = Orders(user_id=user_id, status='paid', total_amount=sum(item.quantity * (item.product.price if item.product else item.service.price) for item in cart_items))
+        storage.new(order)
+        storage.save()
+
+        # Clear the cart
+        for item in cart_items:
+            storage.delete(item)
+        storage.save()
+
+        # Send the PDF receipt to the client
+        response = make_response(send_file(receipt_buffer, as_attachment=True, download_name='receipt.pdf', mimetype='application/pdf'))
+        response.headers['Content-Disposition'] = 'attachment; filename=receipt.pdf'
+
+        # Flash message and redirect to homepage
+        flash('Thank you for shopping with us!', 'success')
+        return response
+    except Exception as e:
+        app.logger.error(f"Failed to confirm purchase: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/wishlist', methods=['GET'])
 def view_wishlist():

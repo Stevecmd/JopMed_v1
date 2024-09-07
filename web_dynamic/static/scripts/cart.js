@@ -1,49 +1,60 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const cartContainer = document.getElementById('cart-items');
-    const totalAmountElement = document.getElementById('total-amount');
-
-    function fetchCart() {
+function fetchCart() {
+    const isLoggedIn = document.body.classList.contains('logged-in');
+    
+    if (isLoggedIn) {
         fetch('http://localhost:5000/api/cart', {
-            credentials: 'include',  // Ensure cookies are included
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
         })
-        .then(response => {
-            if (response.status === 401) {
-                // Handle unauthorized access
-                // alert('Please log in to view your cart.');
-                return Promise.reject('User not logged in');
-            }
-            return response.json();
-        })
-        .then(cartItems => {
-            cartContainer.innerHTML = '';
-            let totalAmount = 0;
-
-            cartItems.forEach(item => {
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <img src="${item.product ? item.product.image_url : item.service.image_url}" alt="${item.product ? item.product.name : item.service.name}" class="cart-item-image">
-                    <div class="cart-item-details">
-                        <h3>${item.product ? item.product.name : item.service.name}</h3>
-                        <p>Quantity: ${item.quantity}</p>
-                        <p>Price: $${(item.product ? item.product.price : item.service.price).toFixed(2)}</p>
-                    </div>
-                `;
-                cartContainer.appendChild(cartItem);
-                totalAmount += (item.product ? item.product.price : item.service.price) * item.quantity;
-            });
-
-            totalAmountElement.textContent = totalAmount.toFixed(2);
-        })
+        .then(response => response.json())
+        .then(displayCart)
         .catch(error => {
-            if (error !== 'User not logged in') {
-                console.error('Error fetching cart:', error);
-            }
+            console.error('Error fetching cart:', error);
+            displayCart([]);
         });
+    } else {
+        const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+        displayCart(localCart);
+    }
+}
+
+function displayCart(cartItems) {
+    const cartContainer = document.getElementById('cart-items');
+    const totalAmountElement = document.getElementById('total-amount');
+    
+    if (!cartContainer || !totalAmountElement) {
+        console.error('Cart elements not found');
+        return;
     }
 
-    fetchCart();
-});
+    cartContainer.innerHTML = '';
+    let totalAmount = 0;
+    let itemCount = 0;
+
+    cartItems.forEach(item => {
+        // Create and append cart item elements
+        // ... (your existing code for creating cart item elements)
+        
+        itemCount += item.quantity;
+        totalAmount += item.price * item.quantity;
+    });
+
+    totalAmountElement.textContent = totalAmount.toFixed(2);
+    
+    // Update cart count
+    const cartCountElement = document.getElementById('cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = itemCount;
+    }
+
+    // Show/hide checkout button based on login status
+    const checkoutButton = document.getElementById('checkout-button');
+    if (checkoutButton) {
+        checkoutButton.style.display = isLoggedIn ? 'block' : 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchCart);
+document.addEventListener('cartUpdated', fetchCart);

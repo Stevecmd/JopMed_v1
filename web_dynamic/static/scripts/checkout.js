@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalTotalAmount = document.getElementById('modalTotalAmount');
     const totalAmountSpan = document.getElementById('total-amount');
     const cartSummary = document.getElementById('cart-summary');
+    const addressIdInput = document.getElementById('address-id');
+    const paymentMethodInput = document.getElementById('payment-method'); 
 
     // Calculate total amount
     function calculateTotal() {
@@ -58,25 +60,45 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     confirmPaymentBtn.addEventListener('click', function() {
-        fetch('/purchase/confirm', {
+        if (!addressIdInput || !paymentMethodInput) {
+            console.error('Address ID or Payment Method input not found');
+            alert('Please provide address and payment method.');
+            return;
+        }
+
+        fetch('http://localhost:5000/api/purchase/confirm', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify({
-                amount: modalTotalAmount.textContent
+                amount: modalTotalAmount.textContent,
+                address_id: addressIdInput.value,
+                payment_method: paymentMethodInput.value
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                modal.style.display = 'none';
-                alert('Thank you for your purchase! Your order has been confirmed.');
-                window.location.href = data.receipt_url;
-            } else {
-                alert('Purchase failed. Please try again.');
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            return response.blob();
         })
-        .catch(error => console.error('Error confirming purchase:', error));
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'receipt.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            alert('Thank you for your purchase! Your order has been confirmed.');
+            window.location.href = '/';
+        })
+        .catch(error => {
+            console.error('Error confirming purchase:', error);
+            alert('An error occurred while processing your purchase. Please try again.');
+        });
     });
 });
