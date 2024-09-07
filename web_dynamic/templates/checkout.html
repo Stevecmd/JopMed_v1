@@ -21,24 +21,5 @@
     <button id="confirm-purchase" class="btn btn-primary">Confirm Purchase</button>
 </div>
 
-<script>
-    document.getElementById('confirm-purchase').addEventListener('click', function() {
-        fetch('/purchase/confirm', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Purchase successful! Redirecting to receipt...');
-                window.location.href = data.receipt_url;
-            } else {
-                alert('Purchase failed. Please try again.');
-            }
-        })
-        .catch(error => console.error('Error confirming purchase:', error));
-    });
-</script>
+<script src="{{ url_for('static', filename='scripts/checkout.js') }}"></script>
 {% endblock %}

@@ -41,6 +41,7 @@ import logging
 import string
 import random
 from io import BytesIO
+from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import models
 
