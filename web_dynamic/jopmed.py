@@ -154,6 +154,22 @@ def remove_from_cart():
         app.logger.error(f"Failed to remove from cart: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/cart/clear', methods=['POST'])
+def clear_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        response = requests.post(f'{API_BASE_URL}/cart/clear', json={'user_id': session['user_id']}, timeout=5)
+        if response.status_code == 200:
+            return jsonify({'success': True}), 200
+        else:
+            error_message = response.json().get('error', 'Unknown error occurred')
+            app.logger.error(f"Failed to clear cart: {error_message}")
+            return jsonify({'error': error_message}), response.status_code
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to clear cart: {str(e)}")
+        return jsonify({'error': 'Failed to connect to the server'}), 500
 
 @app.route('/categories', strict_slashes=False)
 def categories():

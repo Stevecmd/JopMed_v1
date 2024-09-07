@@ -1646,6 +1646,24 @@ def remove_from_cart():
     storage.save()
     return jsonify({'success': True}), 200
 
+@app.route('/api/cart/clear', methods=['POST'])
+def clear_cart():
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    try:
+        cart_items = storage.session.query(ShoppingCart).filter_by(user_id=user_id).all()
+        for item in cart_items:
+            storage.delete(item)
+        storage.save()
+        return jsonify({'success': True, 'message': 'Cart cleared successfully'}), 200
+    except Exception as e:
+        app.logger.error(f"Error clearing cart: {str(e)}")
+        return jsonify({'error': 'Failed to clear cart'}), 500
+
 # Star Ratings
 @app.route('/api/user/ratings', methods=['GET'])
 def get_user_ratings():
