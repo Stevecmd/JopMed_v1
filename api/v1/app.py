@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 """ Flask Application """
 
-from datetime import datetime, timezone
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 from models import storage
 from models.users import User
 from models.addresses import Addresses
@@ -51,7 +50,8 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.secret_key = 'jopmed_secret_key'
 # app.config['SESSION_COOKIE_SECURE'] = True  # Ensure HTTPS only
 # app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # Set session expiry
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session expiry
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 logging.basicConfig(level=logging.INFO)
@@ -94,19 +94,6 @@ def log_request_info():
     logging.debug('Session: %s', session)
 
 
-@app.route('/', strict_slashes=False)
-@app.route('/jopmed-home', strict_slashes=False)
-def jopmed():
-    """Render the home page"""
-    return render_template('index.html')
-
-
-@app.after_request
-def clear_flashes(response):
-    session.pop('_flashes', None)
-    return response
-
-
 # Authentication Routes
 def login_required(f):
     @wraps(f)
@@ -144,95 +131,87 @@ def role_required(role_name):
         return decorated_function
     return decorator
 
+
+# Authentication and User Management
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.form
+    logging.debug(f"Login data: {data}")
+    
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+    
+    users = storage.filter(User, username=data['username'])
+    user = users[0] if users else None
+    
+    if user and check_password_hash(user.password_hash, data['password']):
+        session['user_id'] = user.id
+        logging.info(f"User {user.id} logged in successfully")
+        session['username'] = user.username
+        return jsonify({'success': True}), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
+
+
+@app.route('/api/logout', methods=['POST'])
+@login_required
+def logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    return jsonify({'message': 'Logged out successfully'}), 200
+
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    if request.is_json:
+        data = request.get_json()
+    else:
+        data = request.form
+
+    if not data or 'username' not in data or 'password' not in data or 'email' not in data:
+        return jsonify({'error': 'Invalid data. Please fill all required fields.'}), 400
+
+    # Check if username already exists
+    if storage.get_by_username(User, data['username']):
+        return jsonify({'error': 'Username already exists'}), 400
+
+    # Check if email already exists
+    if storage.get_by_email(User, data['email']):
+        return jsonify({'error': 'Email already exists'}), 400
+
+    # Create new user
+    user = User(
+        username=data['username'],
+        email=data['email'],
+        first_name=data.get('first_name', ''),
+        last_name=data.get('last_name', '')
+    )
+    user.set_password(data['password'])
+    storage.new(user)
+    storage.save()
+    return jsonify({'success': True}), 201
+
+
 def get_current_user():
     if 'user_id' in session:
         return storage.get(User, session['user_id'])
     return None
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form
-        if not data or 'username' not in data or 'password' not in data or 'email' not in data:
-            flash('Invalid data. Please fill all required fields.', 'error')
-            return redirect(url_for('register'))
 
-        # Check if username already exists
-        if storage.get_by_username(User, data['username']):
-            flash('Username already exists', 'error')
-            return redirect(url_for('register'))
-
-        # Check if email already exists
-        if storage.get_by_email(User, data['email']):
-            flash('Email already exists', 'error')
-            return redirect(url_for('register'))
-
-        # Create new user
-        user = User(
-            username=data['username'],
-            email=data['email'],
-            first_name=data.get('first_name', ''),
-            last_name=data.get('last_name', '')
-        )
-        user.set_password(data['password'])
-        
-        try:
-            storage.new(user)
-            storage.save()
-            flash('User registered successfully', 'success')
-            return redirect(url_for('login'))
-        except Exception as e:
-            flash(f'An error occurred during registration: {str(e)}', 'error')
-            return redirect(url_for('register'))
-
-    return render_template('register.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        data = request.form
-        logging.debug(f"Login data: {data}")
-        
-        if not data or 'username' not in data or 'password' not in data:
-            flash('Invalid data', 'error')
-            return redirect(url_for('login'))
-        
-        users = storage.filter(User, username=data['username'])
-        user = users[0] if users else None
-        
-        if user and check_password_hash(user.password_hash, data['password']):
-            session['user_id'] = user.id
-            logging.info(f"User {user.id} logged in successfully")
-            session['username'] = user.username
-            flash('Login successful', 'success')
-            return redirect(url_for('jopmed'))
-        else:
-            flash('Invalid username or password', 'error')
-            return redirect(url_for('login'))
-    return render_template('login.html')
-
-
-@app.route('/logout', methods=['GET', 'POST'])
-@login_required
-def logout():
-    session.pop('user_id', None)
-    session.pop('username', None)
-    flash('Logged out successfully', 'success')
-    if request.method == 'POST':
-        return jsonify({'message': 'Logged out successfully'}), 200
-    return redirect(url_for('login'))
-
-@app.route('/account')
-# @login_required
+@app.route('/api/account', methods=['GET'])
 def account():
-    user = get_current_user()
-    return render_template('account.html', user=user)
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user_id = session['user_id']
+    user = storage.get(User, user_id)
+    if user:
+        return jsonify(user.to_dict()), 200
+    else:
+        return jsonify({'error': 'User not found'}), 404
 
 
-@app.route('/admin-only')
+@app.route('/api/admin-only')
 # @login_required
 @role_required('admin')
 def admin_only():
@@ -251,7 +230,7 @@ def role_required(role):
         return decorated_function
     return decorator
 
-@app.route('/reset-password', methods=['POST'])
+@app.route('/api/reset-password', methods=['POST'])
 def reset_password():
     data = request.get_json()
     if not data or 'email' not in data:
@@ -269,14 +248,14 @@ def reset_password():
     return jsonify({'message': 'Password reset', 'new_password': new_password}), 200
 
 # User Routes
-@app.route('/users', methods=['GET'])
+@app.route('/api/users', methods=['GET'])
 # @login_required
 def get_users():
     users = storage.all(User).values()
     return jsonify([user.to_dict() for user in users])
 
 
-@app.route('/users/<user_id>', methods=['GET'])
+@app.route('/api/users/<user_id>', methods=['GET'])
 # @login_required
 def get_user(user_id):
     try:
@@ -294,7 +273,7 @@ def get_user(user_id):
     return jsonify(user.to_dict())
 
 
-@app.route('/users', methods=['POST'])
+@app.route('/api/users', methods=['POST'])
 def create_user():
     data = request.get_json()
     if not data:
@@ -310,7 +289,7 @@ def create_user():
     return make_response(jsonify(user.to_dict()), 201)
 
 
-@app.route('/users/<user_id>', methods=['PUT'])
+@app.route('/api/users/<user_id>', methods=['PUT'])
 # @login_required
 def update_user(user_id):
     user = storage.get(User, user_id)
@@ -325,7 +304,7 @@ def update_user(user_id):
     return jsonify(user.to_dict())
 
 
-@app.route('/users/<user_id>', methods=['DELETE'])
+@app.route('/api/users/<user_id>', methods=['DELETE'])
 # @login_required
 def delete_user(user_id):
     try:
@@ -348,14 +327,14 @@ def delete_user(user_id):
 
 
 # Address Routes
-@app.route('/addresses', methods=['GET'])
+@app.route('/api/addresses', methods=['GET'])
 # @login_required
 def get_addresses():
     addresses = storage.all(Addresses).values()
     return jsonify([address.to_dict() for address in addresses])
 
 
-@app.route('/addresses/<address_id>', methods=['GET'])
+@app.route('/api/addresses/<address_id>', methods=['GET'])
 # @login_required
 def get_address(address_id):
     try:
@@ -374,7 +353,7 @@ def get_address(address_id):
     return jsonify(address.to_dict())
 
 
-@app.route('/addresses', methods=['POST'])
+@app.route('/api/addresses', methods=['POST'])
 # @login_required
 def create_address():
     data = request.get_json()
@@ -385,7 +364,7 @@ def create_address():
     return make_response(jsonify(address.to_dict()), 201)
 
 
-@app.route('/addresses/<address_id>', methods=['PUT'])
+@app.route('/api/addresses/<address_id>', methods=['PUT'])
 # @login_required
 def update_address(address_id):
     try:
@@ -409,7 +388,7 @@ def update_address(address_id):
     return jsonify(address.to_dict())
 
 
-@app.route('/addresses/<address_id>', methods=['DELETE'])
+@app.route('/api/addresses/<address_id>', methods=['DELETE'])
 # @login_required
 def delete_address(address_id):
     try:
@@ -438,14 +417,14 @@ def delete_address(address_id):
 
 
 # Order Routes
-@app.route('/orders', methods=['GET'])
+@app.route('/api/orders', methods=['GET'])
 # @login_required
 def get_orders():
     orders = storage.all(Orders).values()
     return jsonify([order.to_dict() for order in orders])
 
 
-@app.route('/orders/<order_id>', methods=['GET'])
+@app.route('/api/orders/<order_id>', methods=['GET'])
 # @login_required
 def get_order(order_id):
     logging.info(f"Fetching order with ID {order_id}")
@@ -457,7 +436,7 @@ def get_order(order_id):
     return jsonify(order.to_dict())
 
 
-@app.route('/orders', methods=['POST'])
+@app.route('/api/orders', methods=['POST'])
 # @login_required
 def create_order():
     data = request.get_json()
@@ -468,7 +447,7 @@ def create_order():
     return make_response(jsonify(order.to_dict()), 201)
 
 
-@app.route('/orders/<order_id>', methods=['PUT'])
+@app.route('/api/orders/<order_id>', methods=['PUT'])
 # @login_required
 def update_order(order_id):
     order = storage.get(Orders, order_id)
@@ -483,7 +462,7 @@ def update_order(order_id):
     return jsonify(order.to_dict())
 
 
-@app.route('/orders/<order_id>', methods=['DELETE'])
+@app.route('/api/orders/<order_id>', methods=['DELETE'])
 # @login_required
 def delete_order(order_id):
     try:
@@ -523,12 +502,12 @@ def delete_order(order_id):
         return make_response(jsonify({'error': 'Internal Server Error'}), 500)
 
 # Order Items Routes
-@app.route('/order_items', methods=['GET'])
+@app.route('/api/order_items', methods=['GET'])
 def get_order_items():
     order_items = storage.all(Order_Items).values()
     return jsonify([order_item.to_dict() for order_item in order_items])
 
-@app.route('/order_items/<order_item_id>', methods=['GET'])
+@app.route('/api/order_items/<order_item_id>', methods=['GET'])
 def get_order_item(order_item_id):
     logging.info(f"Fetching order item with ID {order_item_id}")
     order_item = storage.get(Order_Items, order_item_id)
@@ -537,7 +516,7 @@ def get_order_item(order_item_id):
     logging.info(f"Order item with ID {order_item_id} found: {order_item.to_dict()}")
     return jsonify(order_item.to_dict())
 
-@app.route('/order_items', methods=['POST'])
+@app.route('/api/order_items', methods=['POST'])
 def create_order_item():
     data = request.get_json()
     if not data:
@@ -552,7 +531,7 @@ def create_order_item():
     order_item.save()
     return make_response(jsonify(order_item.to_dict()), 201)
 
-@app.route('/order_items/<order_item_id>', methods=['PUT'])
+@app.route('/api/order_items/<order_item_id>', methods=['PUT'])
 def update_order_item(order_item_id):
     data = request.get_json()
     if not data:
@@ -569,7 +548,7 @@ def update_order_item(order_item_id):
     order_item.save()
     return jsonify(order_item.to_dict())
 
-@app.route('/order_items/<order_item_id>', methods=['DELETE'])
+@app.route('/api/order_items/<order_item_id>', methods=['DELETE'])
 def delete_order_item(order_item_id):
     order_item = storage.get(Order_Items, order_item_id)
     if not order_item:
@@ -581,13 +560,13 @@ def delete_order_item(order_item_id):
 
 
 # Doctor Routes
-@app.route('/doctors', methods=['GET'])
+@app.route('/api/doctors', methods=['GET'])
 def get_doctors():
     doctors = storage.all(Doctors).values()
     return jsonify([doctor.to_dict() for doctor in doctors])
 
 
-@app.route('/doctors/<doctor_id>', methods=['GET'])
+@app.route('/api/doctors/<doctor_id>', methods=['GET'])
 def get_doctor(doctor_id):
     doctor = storage.get(Doctors, doctor_id)
     if not doctor:
@@ -595,7 +574,7 @@ def get_doctor(doctor_id):
     return jsonify(doctor.to_dict())
 
 
-@app.route('/doctors', methods=['POST'])
+@app.route('/api/doctors', methods=['POST'])
 def create_doctor():
     data = request.get_json()
     if not data:
@@ -616,7 +595,7 @@ def create_doctor():
     return make_response(jsonify(doctor.to_dict()), 201)
 
 
-@app.route('/doctors/<doctor_id>', methods=['PUT'])
+@app.route('/api/doctors/<doctor_id>', methods=['PUT'])
 def update_doctor(doctor_id):
     doctor = storage.get(Doctors, doctor_id)
     if not doctor:
@@ -630,7 +609,7 @@ def update_doctor(doctor_id):
     return jsonify(doctor.to_dict())
 
 
-@app.route('/doctors/<doctor_id>', methods=['DELETE'])
+@app.route('/api/doctors/<doctor_id>', methods=['DELETE'])
 def delete_doctor(doctor_id):
     doctor = storage.get(Doctors, doctor_id)
     if not doctor:
@@ -641,13 +620,13 @@ def delete_doctor(doctor_id):
 
 
 # Comment Routes
-@app.route('/comments', methods=['GET'])
+@app.route('/api/comments', methods=['GET'])
 def get_comments():
     comments = storage.all(Comments).values()
     return jsonify([comment.to_dict() for comment in comments])
 
 
-@app.route('/comments/<comment_id>', methods=['GET'])
+@app.route('/api/comments/<comment_id>', methods=['GET'])
 def get_comment(comment_id):
     comment = storage.get(Comments, comment_id)
     if not comment:
@@ -655,7 +634,7 @@ def get_comment(comment_id):
     return jsonify(comment.to_dict())
 
 
-@app.route('/comments', methods=['POST'])
+@app.route('/api/comments', methods=['POST'])
 # @login_required
 def create_comment():
     data = request.get_json()
@@ -666,7 +645,7 @@ def create_comment():
     return make_response(jsonify(comment.to_dict()), 201)
 
 
-@app.route('/comments/<comment_id>', methods=['PUT'])
+@app.route('/api/comments/<comment_id>', methods=['PUT'])
 # @login_required
 def update_comment(comment_id):
     comment = storage.get(Comments, comment_id)
@@ -681,7 +660,7 @@ def update_comment(comment_id):
     return jsonify(comment.to_dict())
 
 
-@app.route('/comments/<comment_id>', methods=['DELETE'])
+@app.route('/api/comments/<comment_id>', methods=['DELETE'])
 # @login_required
 def delete_comment(comment_id):
     comment = storage.get(Comments, comment_id)
@@ -693,14 +672,14 @@ def delete_comment(comment_id):
 
 
 # Categories Routes
-@app.route('/categories', methods=['GET'])
+@app.route('/api/categories', methods=['GET'])
 def get_categories():
     categories = storage.all(Categories).values()
     categories_list = [category.to_dict() for category in categories]
     return jsonify(categories_list)
 
 
-@app.route('/categories/<category_id>', methods=['GET'])
+@app.route('/api/categories/<category_id>', methods=['GET'])
 def get_category(category_id):
     category = storage.get(Categories, category_id)
     if not category:
@@ -708,7 +687,7 @@ def get_category(category_id):
     return jsonify(category.to_dict())
 
 
-@app.route('/categories', methods=['POST'])
+@app.route('/api/categories', methods=['POST'])
 def create_category():
     data = request.get_json()
     if not data:
@@ -718,7 +697,7 @@ def create_category():
     return make_response(jsonify(category.to_dict()), 201)
 
 
-@app.route('/categories/<category_id>', methods=['PUT'])
+@app.route('/api/categories/<category_id>', methods=['PUT'])
 def update_category(category_id):
     category = storage.get(Categories, category_id)
     if not category:
@@ -732,7 +711,7 @@ def update_category(category_id):
     return jsonify(category.to_dict())
 
 
-@app.route('/categories/<category_id>', methods=['DELETE'])
+@app.route('/api/categories/<category_id>', methods=['DELETE'])
 def delete_category(category_id):
     try:
         category_id = int(category_id)
@@ -749,13 +728,13 @@ def delete_category(category_id):
 
 
 # Product Categories Routes
-@app.route('/product_categories', methods=['GET'])
+@app.route('/api/product_categories', methods=['GET'])
 def get_product_categories():
     product_categories = storage.all(Product_Categories).values()
     return jsonify([pc.to_dict() for pc in product_categories])
 
 
-@app.route('/product_categories/<product_id>', methods=['GET'])
+@app.route('/api/product_categories/<product_id>', methods=['GET'])
 def get_product_categories_by_product(product_id):
     try:
         product_id = int(product_id)
@@ -769,7 +748,7 @@ def get_product_categories_by_product(product_id):
     return jsonify([category.to_dict() for category in product_categories])
 
 
-@app.route('/product_categories', methods=['POST'])
+@app.route('/api/product_categories', methods=['POST'])
 # @login_required
 def create_product_category():
     data = request.get_json()
@@ -789,7 +768,7 @@ def create_product_category():
 
 
 @app.route(
-    '/product_categories/<product_id>/<category_id>',
+    '/api/product_categories/<product_id>/<category_id>',
     methods=['DELETE']
 )
 # @login_required
@@ -805,7 +784,7 @@ def delete_product_category(product_id, category_id):
 
 
 # Prescriptions Routes!
-@app.route('/prescriptions', methods=['GET'])
+@app.route('/api/prescriptions', methods=['GET'])
 # @login_required
 def get_prescriptions():
     """Retrieve all prescriptions"""
@@ -813,7 +792,7 @@ def get_prescriptions():
     return jsonify([prescription.to_dict() for prescription in prescriptions])
 
 
-@app.route('/prescriptions/<prescription_id>', methods=['GET'])
+@app.route('/api/prescriptions/<prescription_id>', methods=['GET'])
 # @login_required
 def get_prescription(prescription_id):
     """Retrieve a specific prescription by ID"""
@@ -823,7 +802,7 @@ def get_prescription(prescription_id):
     return jsonify(prescription.to_dict())
 
 
-@app.route('/prescriptions', methods=['POST'])
+@app.route('/api/prescriptions', methods=['POST'])
 # @login_required
 def create_prescription():
     data = request.get_json()
@@ -840,7 +819,7 @@ def create_prescription():
     return make_response(jsonify(prescription.to_dict()), 201)
 
 
-@app.route('/prescriptions/<prescription_id>', methods=['DELETE'])
+@app.route('/api/prescriptions/<prescription_id>', methods=['DELETE'])
 # @login_required
 def delete_prescription(prescription_id):
     prescription = storage.get(Prescriptions, prescription_id)
@@ -852,7 +831,7 @@ def delete_prescription(prescription_id):
     return jsonify(deleted_content), 200
 
 
-@app.route('/prescriptions/<prescription_id>', methods=['PUT'])
+@app.route('/api/prescriptions/<prescription_id>', methods=['PUT'])
 # @login_required
 def update_prescription(prescription_id):
     """Update a prescription by ID"""
@@ -879,13 +858,13 @@ def update_prescription(prescription_id):
 
 
 # Products Routes
-@app.route('/products', methods=['GET'])
+@app.route('/api/products', methods=['GET'])
 def get_products():
     products = storage.all(Products).values()
     return jsonify([product.to_dict(include_image=True) for product in products])
 
 
-@app.route('/products/<product_id>', methods=['GET'])
+@app.route('/api/products/<product_id>', methods=['GET'])
 def get_product(product_id):
     product = storage.get(Products, product_id)
     if not product:
@@ -893,7 +872,7 @@ def get_product(product_id):
     return jsonify(product.to_dict())
 
 
-@app.route('/products', methods=['POST'])
+@app.route('/api/products', methods=['POST'])
 # @login_required
 def create_product():
     data = request.get_json()
@@ -909,7 +888,7 @@ def create_product():
     return make_response(jsonify(new_product.to_dict()), 201)
 
 
-@app.route('/products/<product_id>', methods=['PUT'])
+@app.route('/api/products/<product_id>', methods=['PUT'])
 # @login_required
 def update_product(product_id):
     product = storage.get(Products, product_id)
@@ -925,7 +904,7 @@ def update_product(product_id):
     return make_response(jsonify(product.to_dict()), 200)
 
 
-@app.route('/products/<product_id>', methods=['DELETE'])
+@app.route('/api/products/<product_id>', methods=['DELETE'])
 # @login_required
 def delete_product(product_id):
     product = storage.get(Products, product_id)
@@ -936,7 +915,7 @@ def delete_product(product_id):
     return make_response(jsonify({}), 200)
 
 
-@app.route('/products/<product_id>/rate', methods=['POST'])
+@app.route('/api/products/<product_id>/rate', methods=['POST'])
 def rate_product(product_id):
     logging.info(f"Attempting to rate product {product_id}")
     logging.info(f"Session contents: {session}")
@@ -992,7 +971,7 @@ def rate_product(product_id):
     }), 201
 
 
-@app.route('/products/<product_id>/comments', methods=['GET'])
+@app.route('/api/products/<product_id>/comments', methods=['GET'])
 def get_product_comments(product_id):
     product = storage.get(Products, product_id)
     if not product:
@@ -1004,7 +983,7 @@ def get_product_comments(product_id):
         'comments': comments
     })
 
-@app.route('/products/<product_id>/comments', methods=['POST'])
+@app.route('/api/products/<product_id>/comments', methods=['POST'])
 def add_product_comment(product_id):
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
@@ -1037,7 +1016,7 @@ def calculate_average_rating(product_id):
 
 
 # Product Tags Routes
-@app.route('/product_tags', methods=['GET'])
+@app.route('/api/product_tags', methods=['GET'])
 def get_product_tags():
     """Retrieve all product tags"""
     product_tags = storage.all(Product_Tags).values()
@@ -1045,13 +1024,13 @@ def get_product_tags():
     return jsonify(product_tags_list)
 
 
-@app.route('/product_tags/<product_id>', methods=['GET'])
+@app.route('/api/product_tags/<product_id>', methods=['GET'])
 def get_product_tags_by_product(product_id):
     product_tags = storage.filter(Product_Tags, product_id=product_id)
     return jsonify([pt.to_dict() for pt in product_tags])
 
 
-@app.route('/product_tags', methods=['POST'])
+@app.route('/api/product_tags', methods=['POST'])
 # @login_required
 def create_product_tag():
     data = request.get_json()
@@ -1066,7 +1045,7 @@ def create_product_tag():
     return make_response(jsonify(new_pt.to_dict()), 201)
 
 
-@app.route('/product_tags/<product_id>/<tag_id>', methods=['DELETE'])
+@app.route('/api/product_tags/<product_id>/<tag_id>', methods=['DELETE'])
 # @login_required
 def delete_product_tag(product_id, tag_id):
     pt = storage.get(Product_Tags, (product_id, tag_id))
@@ -1078,7 +1057,7 @@ def delete_product_tag(product_id, tag_id):
 
 
 # Product Images Routes
-@app.route('/product_images', methods=['GET'])
+@app.route('/api/product_images', methods=['GET'])
 def get_product_images():
     logging.info("Fetching all product images")
     product_images = storage.all(Product_Images).values()
@@ -1089,7 +1068,7 @@ def get_product_images():
     return response
 
 
-@app.route('/product_images/<product_id>', methods=['GET'])
+@app.route('/api/product_images/<product_id>', methods=['GET'])
 # @login_required
 def get_product_images_by_product(product_id):
     logging.info(f"Fetching product images for product ID: {product_id}")
@@ -1104,7 +1083,7 @@ def get_product_images_by_product(product_id):
     return response
 
 
-@app.route('/product_images', methods=['POST'])
+@app.route('/api/product_images', methods=['POST'])
 def create_product_image():
     data = request.get_json()
     if not data:
@@ -1127,7 +1106,7 @@ def create_product_image():
     return response
 
 
-@app.route('/product_images/<image_id>', methods=['DELETE'])
+@app.route('/api/product_images/<image_id>', methods=['DELETE'])
 # @login_required
 def delete_product_image(image_id):
     pi = storage.get(Product_Images, image_id)
@@ -1143,14 +1122,14 @@ def delete_product_image(image_id):
 
 
 # Shipping Methods Routes
-@app.route('/shipping_methods', methods=['GET'])
+@app.route('/api/shipping_methods', methods=['GET'])
 # @login_required
 def get_shipping_methods():
     shipping_methods = storage.all(Shipping_Methods).values()
     return jsonify([method.to_dict() for method in shipping_methods])
 
 
-@app.route('/shipping_methods/<method_id>', methods=['GET'])
+@app.route('/api/shipping_methods/<method_id>', methods=['GET'])
 # @login_required
 def get_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
@@ -1159,7 +1138,7 @@ def get_shipping_method(method_id):
     return jsonify(method.to_dict())
 
 
-@app.route('/shipping_methods', methods=['POST'])
+@app.route('/api/shipping_methods', methods=['POST'])
 # @login_required
 def create_shipping_method():
     data = request.get_json()
@@ -1172,7 +1151,7 @@ def create_shipping_method():
     return make_response(jsonify(new_method.to_dict()), 201)
 
 
-@app.route('/shipping_methods/<method_id>', methods=['PUT'])
+@app.route('/api/shipping_methods/<method_id>', methods=['PUT'])
 # @login_required
 def update_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
@@ -1187,7 +1166,7 @@ def update_shipping_method(method_id):
     return make_response(jsonify(method.to_dict()), 200)
 
 
-@app.route('/shipping_methods/<method_id>', methods=['DELETE'])
+@app.route('/api/shipping_methods/<method_id>', methods=['DELETE'])
 # @login_required
 def delete_shipping_method(method_id):
     method = storage.get(Shipping_Methods, method_id)
@@ -1199,13 +1178,13 @@ def delete_shipping_method(method_id):
 
 
 # Shipping Information Routes
-@app.route('/shipping_information', methods=['GET'])
+@app.route('/api/shipping_information', methods=['GET'])
 def get_shipping_information():
     shipping_info = storage.all(Shipping_Information).values()
     return jsonify([info.to_dict() for info in shipping_info])
 
 
-@app.route('/shipping_information/<info_id>', methods=['GET'])
+@app.route('/api/shipping_information/<info_id>', methods=['GET'])
 def get_shipping_info(info_id):
     info = storage.get(Shipping_Information, info_id)
     if not info:
@@ -1213,7 +1192,7 @@ def get_shipping_info(info_id):
     return jsonify(info.to_dict())
 
 
-@app.route('/shipping_information', methods=['POST'])
+@app.route('/api/shipping_information', methods=['POST'])
 def create_shipping_info():
     data = request.get_json()
     if not data:
@@ -1234,7 +1213,7 @@ def create_shipping_info():
     return make_response(jsonify(new_info.to_dict()), 201)
 
 
-@app.route('/shipping_information/<info_id>', methods=['PUT'])
+@app.route('/api/shipping_information/<info_id>', methods=['PUT'])
 def update_shipping_info(info_id):
     info = storage.get(Shipping_Information, info_id)
     if not info:
@@ -1248,7 +1227,7 @@ def update_shipping_info(info_id):
     return make_response(jsonify(info.to_dict()), 200)
 
 
-@app.route('/shipping_information/<info_id>', methods=['DELETE'])
+@app.route('/api/shipping_information/<info_id>', methods=['DELETE'])
 def delete_shipping_info(info_id):
     info = storage.get(Shipping_Information, info_id)
     if not info:
@@ -1259,13 +1238,13 @@ def delete_shipping_info(info_id):
 
 
 # Roles Routes
-@app.route('/roles', methods=['GET'])
+@app.route('/api/roles', methods=['GET'])
 def get_roles():
     roles = storage.all(Roles).values()
     return jsonify([role.to_dict() for role in roles])
 
 
-@app.route('/roles/<int:role_id>', methods=['GET'])
+@app.route('/api/roles/<int:role_id>', methods=['GET'])
 def get_role(role_id):
     role = storage.get(Roles, role_id)
     if not role:
@@ -1273,7 +1252,7 @@ def get_role(role_id):
     return jsonify(role.to_dict())
 
 
-@app.route('/roles', methods=['POST'])
+@app.route('/api/roles', methods=['POST'])
 # @login_required
 def create_role():
     data = request.get_json()
@@ -1286,7 +1265,7 @@ def create_role():
     return make_response(jsonify(new_role.to_dict()), 201)
 
 
-@app.route('/roles/<int:role_id>', methods=['PUT'])
+@app.route('/api/roles/<int:role_id>', methods=['PUT'])
 # @login_required
 def update_role(role_id):
     role = storage.get(Roles, role_id)
@@ -1301,7 +1280,7 @@ def update_role(role_id):
     return make_response(jsonify(role.to_dict()), 200)
 
 
-@app.route('/roles/<int:role_id>', methods=['DELETE'])
+@app.route('/api/roles/<int:role_id>', methods=['DELETE'])
 # @login_required
 def delete_role(role_id):
     role = storage.get(Roles, role_id)
@@ -1325,14 +1304,14 @@ def role_required(role):
 
 # Reviews Routes
 # Read All Reviews:
-@app.route('/reviews', methods=['GET'])
+@app.route('/api/reviews', methods=['GET'])
 def get_reviews():
     reviews = storage.all(Reviews).values()
     return jsonify([review.to_dict() for review in reviews])
 
 
 # Read a Single Review:
-@app.route('/reviews/<review_id>', methods=['GET'])
+@app.route('/api/reviews/<review_id>', methods=['GET'])
 def get_review(review_id):
     review = storage.get(Reviews, review_id)
     if not review:
@@ -1341,7 +1320,7 @@ def get_review(review_id):
 
 
 # Create a Review:
-@app.route('/reviews', methods=['POST'])
+@app.route('/api/reviews', methods=['POST'])
 # @login_required
 def create_review():
     data = request.get_json()
@@ -1362,7 +1341,7 @@ def create_review():
 
 
 # Update a Review:
-@app.route('/reviews/<review_id>', methods=['PUT'])
+@app.route('/api/reviews/<review_id>', methods=['PUT'])
 # @login_required
 def update_review(review_id):
     review = storage.get(Reviews, review_id)
@@ -1378,7 +1357,7 @@ def update_review(review_id):
 
 
 # Delete a Review:
-@app.route('/reviews/<review_id>', methods=['DELETE'])
+@app.route('/api/reviews/<review_id>', methods=['DELETE'])
 # @login_required
 def delete_review(review_id):
     review = storage.get(Reviews, review_id)
@@ -1391,7 +1370,7 @@ def delete_review(review_id):
 
 # Payment Routes
 # Create a Payment
-@app.route('/payment', methods=['POST'])
+@app.route('/api/payment', methods=['POST'])
 # @login_required
 def initiate_payment():
     data = request.get_json()
@@ -1417,14 +1396,14 @@ def initiate_payment():
     return make_response(jsonify(new_payment.to_dict()), 201)
 
 # Read All Payments
-@app.route('/payments', methods=['GET'])
+@app.route('/api/payments', methods=['GET'])
 # @login_required
 def get_payments():
     payments = storage.all(Payments).values()
     return jsonify([payment.to_dict() for payment in payments])
 
 # Read a Single Payment
-@app.route('/payments/<payment_id>', methods=['GET'])
+@app.route('/api/payments/<payment_id>', methods=['GET'])
 # @login_required
 def get_payment(payment_id):
     payment = storage.get(Payments, payment_id)
@@ -1433,7 +1412,7 @@ def get_payment(payment_id):
     return jsonify(payment.to_dict())
 
 # Update a Payment
-@app.route('/payments/<payment_id>', methods=['PUT'])
+@app.route('/api/payments/<payment_id>', methods=['PUT'])
 # @login_required
 def update_payment(payment_id):
     payment = storage.get(Payments, payment_id)
@@ -1452,7 +1431,7 @@ def update_payment(payment_id):
     return jsonify(payment.to_dict())
 
 # Delete a Payment
-@app.route('/payments/<payment_id>', methods=['DELETE'])
+@app.route('/api/payments/<payment_id>', methods=['DELETE'])
 # @login_required
 def delete_payment(payment_id):
     payment = storage.get(Payments, payment_id)
@@ -1464,7 +1443,7 @@ def delete_payment(payment_id):
     return make_response(jsonify({}), 200)
 
 # Confirm a Payment
-@app.route('/payment/confirm', methods=['POST'])
+@app.route('/api/payment/confirm', methods=['POST'])
 # @login_required
 def confirm_payment():
     data = request.get_json()
@@ -1483,19 +1462,19 @@ def confirm_payment():
     return make_response(jsonify(payment.to_dict()), 200)
 
 
-@app.route('/services', methods=['GET'])
+@app.route('/api/services', methods=['GET'])
 def get_services():
     services = storage.all(Service).values()
     return jsonify([service.to_dict() for service in services])
 
-@app.route('/services/<service_id>', methods=['GET'])
+@app.route('/api/services/<service_id>', methods=['GET'])
 def get_service(service_id):
     service = storage.get(Service, service_id)
     if not service:
         return make_response(jsonify({'error': 'Not found'}), 404)
     return jsonify(service.to_dict())
 
-@app.route('/services', methods=['POST'])
+@app.route('/api/services', methods=['POST'])
 def create_service():
     data = request.get_json()
     if not data:
@@ -1508,7 +1487,7 @@ def create_service():
     new_service.save()
     return make_response(jsonify(new_service.to_dict()), 201)
 
-@app.route('/services/<service_id>', methods=['PUT'])
+@app.route('/api/services/<service_id>', methods=['PUT'])
 def update_service(service_id):
     service = storage.get(Service, service_id)
     if not service:
@@ -1522,7 +1501,7 @@ def update_service(service_id):
     service.save()
     return jsonify(service.to_dict())
 
-@app.route('/services/<service_id>', methods=['DELETE'])
+@app.route('/api/services/<service_id>', methods=['DELETE'])
 def delete_service(service_id):
     service = storage.get(Service, service_id)
     if not service:
@@ -1532,14 +1511,14 @@ def delete_service(service_id):
     return make_response(jsonify({}), 200)
 
 # Wishlist Routes
-@app.route('/wishlist', methods=['GET'])
+@app.route('/api/wishlist', methods=['GET'])
 # @login_required
 def view_wishlist():
     """Fetch all wishlist items"""
     wishlists = storage.all(Wishlist).values()
     return jsonify([wishlist.to_dict() for wishlist in wishlists])
 
-@app.route('/wishlist', methods=['POST'])
+@app.route('/api/wishlist', methods=['POST'])
 # @login_required
 def add_to_wishlist():
     """Add a new item to the wishlist"""
@@ -1551,7 +1530,7 @@ def add_to_wishlist():
     new_item.save()
     return jsonify({'message': 'Item added to wishlist'}), 201
 
-@app.route('/wishlist', methods=['PUT'])
+@app.route('/api/wishlist', methods=['PUT'])
 # @login_required
 def update_wishlist():
     """Update an item in the wishlist"""
@@ -1569,7 +1548,7 @@ def update_wishlist():
     item.save()
     return jsonify({'message': 'Item updated in wishlist'}), 200
 
-@app.route('/wishlist', methods=['DELETE'])
+@app.route('/api/wishlist', methods=['DELETE'])
 # @login_required
 def remove_from_wishlist():
     """Remove an item from the wishlist"""
@@ -1586,87 +1565,54 @@ def remove_from_wishlist():
     return jsonify({'message': 'Item removed from wishlist'}), 200
 
 @app.route('/api/cart', methods=['GET'])
-def get_cart_api():
-    """Retrieves the current user's cart"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
-    
-    return jsonify([item.to_dict() for item in cart_items])
-
-@app.route('/cart', methods=['GET'])
-# @login_required
 def get_cart():
     if 'user_id' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
+        return jsonify({'error': 'Unauthorized'}), 401
+    
     user_id = session['user_id']
     cart_items = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id).all()
-    return jsonify([item.to_dict() for item in cart_items])
+    return jsonify([item.to_dict() for item in cart_items]), 200
 
-@app.route('/cart/add', methods=['POST'])
-# @login_required
+
+@app.route('/api/cart/add', methods=['POST'])
 def add_to_cart():
-    if 'user_id' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
-    user_id = session['user_id']
     data = request.get_json()
-    if not data or ('product_id' not in data and 'service_id' not in data) or 'quantity' not in data:
-        return jsonify({'error': 'Invalid data'}), 400
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user_id = session['user_id']
+    item_id = data.get('item_id')
+    item_type = data.get('item_type')
+    quantity = data.get('quantity', 1)
 
-    if 'product_id' in data:
-        item = storage.get(Products, data['product_id'])
-        item_type = 'product'
+    if item_type == 'product':
+        item = storage.get(Products, item_id)
+    elif item_type == 'service':
+        item = storage.get(Service, item_id)
     else:
-        item = storage.get(Service, data['service_id'])
-        item_type = 'service'
+        return jsonify({'error': 'Invalid item type'}), 400
 
     if not item:
-        return jsonify({'error': f'{item_type.capitalize()} not found'}), 404
+        return jsonify({'error': 'Item not found'}), 404
 
-    cart_item = storage.filter(ShoppingCart, user_id=user_id, **{f'{item_type}_id': item.id}).first()
-    if cart_item:
-        cart_item.quantity += data['quantity']
+    cart_item = ShoppingCart(user_id=user_id, quantity=quantity)
+    if item_type == 'product':
+        cart_item.product_id = item_id
     else:
-        cart_item = ShoppingCart(user_id=user_id, **{f'{item_type}_id': item.id}, quantity=data['quantity'])
-        storage.new(cart_item)
+        cart_item.service_id = item_id
+
+    storage.new(cart_item)
     storage.save()
-    return jsonify({'success': True, 'cart_item': cart_item.to_dict()}), 200
+    return jsonify({'success': True, 'message': 'Item added to cart'}), 200
 
 
-@app.route('/cart/update_cart_item', methods=['POST', 'PUT'])
-# @login_required
-def update_cart_item():
-    try:
-        data = request.get_json()
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'User not logged in'}), 401
-        
-        item_id = data.get('item_id')
-        quantity = data.get('quantity')
-        
-        cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
-        if not cart_item:
-            return jsonify({'error': 'Item not found in cart'}), 404
-        
-        cart_item.quantity = quantity
-        storage.save()
-        
-        return jsonify({'message': 'Cart item updated'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/cart/remove', methods=['DELETE'])
-# @login_required
+@app.route('/api/cart/remove', methods=['DELETE'])
 def remove_from_cart():
-    """Removes an item from the cart"""
     data = request.get_json()
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'User not logged in'}), 401
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
     
+    user_id = session['user_id']
     item_id = data.get('item_id')
     cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
 
@@ -1675,11 +1621,38 @@ def remove_from_cart():
 
     storage.delete(cart_item)
     storage.save()
-
     return jsonify({'message': 'Item removed from cart'}), 200
 
+
+@app.route('/api/cart/update_cart_item', methods=['POST'])
+def update_cart_item():
+    data = request.get_json()
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user_id = session['user_id']
+    item_id = data.get('item_id')
+    quantity_change = data.get('quantity')
+    
+    cart_item = storage.session.query(ShoppingCart).filter(ShoppingCart.user_id == user_id, ShoppingCart.id == item_id).first()
+    if not cart_item:
+        return jsonify({'error': 'Item not found in cart'}), 404
+    
+    if isinstance(quantity_change, int):
+        cart_item.quantity += quantity_change
+    else:
+        return jsonify({'error': 'Invalid quantity'}), 400
+    
+    if cart_item.quantity <= 0:
+        storage.delete(cart_item)
+    else:
+        storage.save()
+    
+    return jsonify({'success': True}), 200
+
+
 # Star Ratings
-@app.route('/user/ratings', methods=['GET'])
+@app.route('/api/user/ratings', methods=['GET'])
 def get_user_ratings():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
@@ -1698,38 +1671,33 @@ def get_user_ratings():
         return jsonify({'error': 'Failed to fetch user ratings'}), 500
 
 
-@app.route('/checkout', methods=['GET'])
-def checkout():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user_id = session['user_id']
-    cart_items = storage.filter(ShoppingCart, user_id=user_id)
-    total_amount = sum(item.product.price * item.quantity for item in cart_items if item.product)
-    total_amount += sum(item.service.price * item.quantity for item in cart_items if item.service)
-    
-    return render_template('checkout.html', cart_items=cart_items, total_amount=total_amount)
 
-@app.route('/register-payment-method', methods=['GET', 'POST'])
+@app.route('/api/register-payment-method', methods=['POST'])
 def register_payment_method():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    data = request.get_json()
+    if not data or 'user_id' not in data or 'payment_method' not in data:
+        return jsonify({'error': 'Invalid data. Please provide user_id and payment_method.'}), 400
 
-    if request.method == 'POST':
-        card_number = request.form['card_number']
-        last_four = card_number[-4:]
-        
-        # Save simulated payment method to database
-        new_payment_method = PaymentMethod(user_id=session['user_id'], 
-                                           last_four=last_four)
-        storage.new(new_payment_method)
-        storage.save()
-        
-        return redirect(url_for('checkout'))
-    
-    return render_template('register_payment_method.html')
+    user_id = data['user_id']
+    payment_method_data = data['payment_method']
 
-@app.route('/purchase/confirm', methods=['POST'])
+    user = storage.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    payment_method = PaymentMethod(
+        user_id=user_id,
+        card_number=payment_method_data.get('card_number'),
+        card_expiry=payment_method_data.get('card_expiry'),
+        card_cvv=payment_method_data.get('card_cvv'),
+        card_holder_name=payment_method_data.get('card_holder_name')
+    )
+
+    storage.new(payment_method)
+    storage.save()
+    return jsonify({'success': True, 'message': 'Payment method registered successfully'}), 201
+
+@app.route('/api/purchase/confirm', methods=['POST'])
 def confirm_purchase():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
@@ -1782,7 +1750,7 @@ def confirm_purchase():
     
     return jsonify({'success': True, 'receipt_url': receipt_url}), 200
 
-@app.route('/receipt/<int:order_id>')
+@app.route('/api/receipt/<int:order_id>')
 def generate_receipt(order_id):
     order = storage.get(Orders, order_id)
     if not order:
@@ -1803,7 +1771,7 @@ def generate_receipt(order_id):
     return send_file(buffer, as_attachment=True, download_name=f"receipt_{order.id}.pdf", mimetype='application/pdf')
 
 
-@app.route('/check_login', methods=['GET'])
+@app.route('/api/check_login', methods=['GET'])
 def check_login():
     logged_in = 'user_id' in session
     user_id = session.get('user_id')
