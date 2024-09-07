@@ -1,9 +1,9 @@
 import os
 import requests
 from flask import Flask, render_template, session, redirect, url_for, flash, jsonify, request, abort
+from flask_cors import CORS
 from models import storage
 from models.users import User
-from werkzeug.security import check_password_hash, generate_password_hash
 from models.shopping_cart import ShoppingCart
 from models.products import Products
 from models.service import Service
@@ -17,6 +17,8 @@ app.config['SESSION_COOKIE_SECURE'] = True  # for HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session to last for 7 days
+
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 API_BASE_URL = 'http://localhost:5000/api'
 
@@ -39,14 +41,19 @@ def about():
 
 @app.route('/account', strict_slashes=False)
 def account():
+    if 'user_id' not in session:
+        flash('Please log in to view your account', 'error')
+        return redirect(url_for('login'))
+
     try:
-        response = requests.get(f'{API_BASE_URL}/account', timeout=5)
+        headers = {'User-ID': str(session['user_id'])}
+        response = requests.get(f'{API_BASE_URL}/account', headers=headers, cookies=request.cookies, timeout=5)
         response.raise_for_status()
-        user = response.json()
-        return render_template('account.html', user=user)
+        user_data = response.json()
+        return render_template('account.html', user=user_data)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch account details: {str(e)}")
-        flash(f'Failed to fetch account details: {str(e)}', 'error')
+        flash('Failed to fetch account details. Please try again.', 'error')
         return redirect(url_for('login'))
 
 
@@ -208,6 +215,10 @@ def login():
         try:
             response = requests.post(f'{API_BASE_URL}/login', data=data, timeout=5)
             response.raise_for_status()
+            user_data = response.json()
+            session['user_id'] = user_data['user_id']
+            session['username'] = user_data['username']
+            session.permanent = True
             flash('Login successful', 'success')
             return redirect(url_for('jopmed'))
         except requests.RequestException as e:
@@ -287,6 +298,74 @@ def register_payment_method():
             flash('Failed to register payment method. Please try again.', 'error')
             return render_template('register-payment-method.html')
     return render_template('register-payment-method.html')
+
+@app.route('/wishlist', methods=['GET'])
+def view_wishlist():
+    if 'user_id' not in session:
+        flash('Please log in to view your wishlist', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        headers = {'User-ID': str(session['user_id'])}
+        response = requests.get(f'{API_BASE_URL}/wishlist', headers=headers, timeout=5)
+        response.raise_for_status()
+        wishlist_items = response.json()
+        return render_template('wishlist.html', wishlist_items=wishlist_items)
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch wishlist items: {str(e)}")
+        flash('Failed to fetch wishlist items. Please try again.', 'error')
+        return render_template('wishlist.html', wishlist_items=[])
+
+@app.route('/wishlist/add', methods=['POST'])
+def add_to_wishlist():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.form.to_dict()
+    data['user_id'] = session['user_id']
+    try:
+        response = requests.post(f'{API_BASE_URL}/wishlist', json=data, timeout=5)
+        response.raise_for_status()
+        flash('Item added to wishlist successfully', 'success')
+        return redirect(url_for('view_wishlist'))
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to add item to wishlist: {str(e)}")
+        flash('Failed to add item to wishlist. Please try again.', 'error')
+        return redirect(url_for('view_wishlist'))
+
+@app.route('/wishlist/update/<int:item_id>', methods=['POST'])
+def update_wishlist_item(item_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.form.to_dict()
+    data['user_id'] = session['user_id']
+    data['id'] = item_id
+    try:
+        response = requests.put(f'{API_BASE_URL}/wishlist', json=data, timeout=5)
+        response.raise_for_status()
+        flash('Wishlist item updated successfully', 'success')
+        return redirect(url_for('view_wishlist'))
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to update wishlist item: {str(e)}")
+        flash('Failed to update wishlist item. Please try again.', 'error')
+        return redirect(url_for('view_wishlist'))
+
+@app.route('/wishlist/remove/<int:item_id>', methods=['POST'])
+def remove_from_wishlist(item_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = {'user_id': session['user_id'], 'id': item_id}
+    try:
+        response = requests.delete(f'{API_BASE_URL}/wishlist', json=data, timeout=5)
+        response.raise_for_status()
+        flash('Item removed from wishlist successfully', 'success')
+        return redirect(url_for('view_wishlist'))
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to remove item from wishlist: {str(e)}")
+        flash('Failed to remove item from wishlist. Please try again.', 'error')
+        return redirect(url_for('view_wishlist'))
 
 if __name__ == "__main__":
     print("Running Flask application...")

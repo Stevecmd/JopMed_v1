@@ -48,10 +48,10 @@ import models
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.secret_key = 'jopmed_secret_key'
-# app.config['SESSION_COOKIE_SECURE'] = True  # Ensure HTTPS only
-# app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
+app.config['SESSION_COOKIE_SECURE'] = True  # for HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session expiry
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session to last for 7 days
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 logging.basicConfig(level=logging.INFO)
@@ -146,9 +146,10 @@ def login():
     
     if user and check_password_hash(user.password_hash, data['password']):
         session['user_id'] = user.id
-        logging.info(f"User {user.id} logged in successfully")
         session['username'] = user.username
-        return jsonify({'success': True}), 200
+        session.permanent = True
+        logging.info(f"User {user.id} logged in successfully")
+        return jsonify({'success': True, 'user_id': user.id, 'username': user.username}), 200
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
 
@@ -200,6 +201,7 @@ def get_current_user():
 
 @app.route('/api/account', methods=['GET'])
 def account():
+    user_id = request.headers.get('User-ID')
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -1512,53 +1514,49 @@ def delete_service(service_id):
 
 # Wishlist Routes
 @app.route('/api/wishlist', methods=['GET'])
-# @login_required
 def view_wishlist():
-    """Fetch all wishlist items"""
-    wishlists = storage.all(Wishlist).values()
-    return jsonify([wishlist.to_dict() for wishlist in wishlists])
+    user_id = request.headers.get('User-ID')
+    if not user_id:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    wishlist_items = storage.filter(Wishlist, user_id=user_id)
+    return jsonify([item.to_dict() for item in wishlist_items])
 
 @app.route('/api/wishlist', methods=['POST'])
-# @login_required
 def add_to_wishlist():
-    """Add a new item to the wishlist"""
     data = request.get_json()
     if not data or 'user_id' not in data or 'item_name' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
     new_item = Wishlist(**data)
     new_item.save()
-    return jsonify({'message': 'Item added to wishlist'}), 201
+    return jsonify({'message': 'Item added to wishlist', 'item': new_item.to_dict()}), 201
 
 @app.route('/api/wishlist', methods=['PUT'])
-# @login_required
 def update_wishlist():
-    """Update an item in the wishlist"""
     data = request.get_json()
-    if not data or 'id' not in data:
+    if not data or 'id' not in data or 'user_id' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
     item = storage.get(Wishlist, data['id'])
-    if not item:
-        return jsonify({'error': 'Item not found'}), 404
+    if not item or str(item.user_id) != str(data['user_id']):
+        return jsonify({'error': 'Item not found or unauthorized'}), 404
 
     for key, value in data.items():
-        if key != 'id':
+        if key != 'id' and key != 'user_id':
             setattr(item, key, value)
     item.save()
-    return jsonify({'message': 'Item updated in wishlist'}), 200
+    return jsonify({'message': 'Item updated in wishlist', 'item': item.to_dict()}), 200
 
 @app.route('/api/wishlist', methods=['DELETE'])
-# @login_required
 def remove_from_wishlist():
-    """Remove an item from the wishlist"""
     data = request.get_json()
-    if not data or 'id' not in data:
+    if not data or 'id' not in data or 'user_id' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
     item = storage.get(Wishlist, data['id'])
-    if not item:
-        return jsonify({'error': 'Item not found'}), 404
+    if not item or str(item.user_id) != str(data['user_id']):
+        return jsonify({'error': 'Item not found or unauthorized'}), 404
 
     item.delete()
     storage.save()
