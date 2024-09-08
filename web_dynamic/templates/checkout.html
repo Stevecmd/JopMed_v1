@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - JopMed{% endblock %}
+
+{% block content %}
+<div class="checkout-container">
+    <h1>Checkout</h1>
+    <div id="cart-summary">
+        {% for item in cart_items %}
+            <div class="cart-item">
+                <img src="{{ item.product.image_url if item.product else item.service.image_url }}" alt="{{ item.product.name if item.product else item.service.name }}" class="cart-item-image">
+                <div class="cart-item-details">
+                    <h3>{{ item.product.name if item.product else item.service.name }}</h3>
+                    <p>Quantity: {{ item.quantity }}</p>
+                    <p class="item-price">Price: ${{ "%.2f" | format((item.product.price|float if item.product else item.service.price|float) * item.quantity) }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div id="cart-total">Total: $<span id="total-amount">0.00</span></div>
+    <div class="button-group">
+        <button id="confirm-purchase" class="btn btn-primary">Confirm Purchase</button>
+        <button id="clear-cart" class="btn btn-secondary">Clear Cart</button>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Payment Details</h2>
+        <p>Please send payment to:</p>
+        <p><strong>Account Number:</strong> 1234567890</p>
+        <p><strong>Bank Name:</strong> JopMed Bank</p>
+        <p><strong>Amount:</strong> $<span id="modalTotalAmount"></span></p>
+        <button id="confirmPayment" class="btn btn-success">Confirm Payment</button>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='scripts/checkout.js') }}"></script>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/checkout-modal.css') }}">
+{% endblock %}

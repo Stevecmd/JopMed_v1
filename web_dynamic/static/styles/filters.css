@@ -6,21 +6,7 @@
     border: 1px solid #DDDDDD;
     border-radius: 4px;
 }
-button {
-    position: absolute;
-    font-size: 18px;
-    background: #FF5A5F;
-    color: #FFFFFF;
-    height: 48px;
-    width: 20%;
-    border-style: none;
-    border-radius: 4px;
-    top: 15%;
-    right: 30px;
-}
-button:hover {
-    opacity: 0.9;
-}
+
 .filters div {
     display: inline-grid;
 }

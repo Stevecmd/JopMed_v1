@@ -11,6 +11,8 @@ from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base, as_declarative, declared_attr
+from sqlalchemy.orm import Query
+
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -74,6 +76,18 @@ class BaseModel:
             if "password" in new_dict:
                 del new_dict["password"]
         return new_dict
+
+
+    @classmethod
+    def filter(cls, **kwargs):
+        """
+        Filter instances of the class based on given criteria
+        """
+        if models.storage_t == "db":
+            return models.storage.session.query(cls).filter_by(**kwargs)
+        else:
+            all_objs = models.storage.all(cls).values()
+            return [obj for obj in all_objs if all(getattr(obj, k) == v for k, v in kwargs.items())]
 
     def delete(self):
         """delete the current instance from the storage"""

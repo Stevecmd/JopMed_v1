@@ -135,27 +135,10 @@ INSERT INTO shipping_information (user_id, address_id, shipping_method_id, track
 (1, 1, 1, 'TRACK12345', NOW(), NOW()), -- Standard Shipping for John Doe
 (2, 2, 2, 'TRACK67890', NOW(), NOW()); -- Express Shipping for Jane Doe
 
--- -- Categories Table
--- DROP TABLE IF EXISTS categories;
-
--- CREATE TABLE categories (
---     id INT NOT NULL AUTO_INCREMENT,
---     name VARCHAR(255) NOT NULL,
---     slug VARCHAR(255) NOT NULL,
---     description TEXT,
---     created_at DATETIME,
---     updated_at DATETIME,
---     PRIMARY KEY (id),
---     UNIQUE (slug)
--- );
-
--- -- Insert sample data into categories table
--- INSERT INTO categories (name, slug, description, created_at, updated_at) VALUES
--- ('Medicines', 'medicines', 'Various types of medicines', NOW(), NOW()),
--- ('Supplements', 'supplements', 'Health supplements and vitamins', NOW(), NOW());
 
 -- Categories Table
 DROP TABLE IF EXISTS categories;
+
 CREATE TABLE categories (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -197,28 +180,8 @@ INSERT INTO product_categories (product_id, category_id, created_at, updated_at)
 (2, 2, NOW(), NOW());
   
 -- -- Products/Medicines Table
--- DROP TABLE IF EXISTS products;
-
--- CREATE TABLE products (
---     id INT NOT NULL AUTO_INCREMENT,
---     name VARCHAR(255) NOT NULL,
---     description TEXT,
---     price DECIMAL(10, 2) NOT NULL,
---     stock INT NOT NULL,
---     category VARCHAR(255),
---     slug VARCHAR(255),
---     created_at DATETIME NOT NULL,
---     updated_at DATETIME NOT NULL,
---     PRIMARY KEY (id)
--- );
-
--- -- Insert sample data into products table
--- INSERT INTO products (name, description, price, stock, category, slug, created_at, updated_at) VALUES
--- ('Paracetamol', 'Pain reliever and fever reducer', 5.99, 100, 'Medicines', 'paracetamol', NOW(), NOW()),
--- ('Vitamin C', 'Immune system booster', 10.50, 200, 'Supplements', 'vitamin-c', NOW(), NOW());
-
--- -- Products/Medicines Table
 DROP TABLE IF EXISTS products;
+
 CREATE TABLE products (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -355,7 +318,8 @@ CREATE TABLE reviews (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
 );
 
 -- Insert sample data into reviews table
@@ -558,6 +522,7 @@ CREATE TABLE services (
     price DECIMAL(10, 2) NOT NULL,
     user_id INT NOT NULL,
     order_id INT NOT NULL,
+    image_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -566,16 +531,16 @@ CREATE TABLE services (
 );
 
 -- Insert sample data into services table
-INSERT INTO services (name, description, price, user_id, order_id, created_at, updated_at)
+INSERT INTO services (name, description, price, user_id, order_id, image_url, created_at, updated_at)
 VALUES
-('Online Consultation', 'Consult with a doctor online', 50.00, 1, 1, NOW(), NOW()),
-('Home Delivery', 'Get your medicines delivered to your home', 10.00, 2, 2, NOW(), NOW()),
-('Lab Test', 'Get lab tests done at home', 100.00, 1, 1, NOW(), NOW()),
-('Prescription Renewal', 'Renew your prescription online', 20.00, 2, 2, NOW(), NOW()),
-('Medication Reminders', 'Receive reminders to take your medications', 5.00, 1, 1, NOW(), NOW()),
-('Health and Wellness Programs', 'Join health and wellness programs', 30.00, 2, 2, NOW(), NOW()),
-('Emergency Services', 'Access emergency medical services', 200.00, 1, 1, NOW(), NOW()),
-('Product Recommendations', 'Get personalized product recommendations', 0.00, 2, 2, NOW(), NOW());
+('Online Consultation', 'Consult with a doctor online', 50.00, 1, 1, 'https://images.pexels.com/photos/6098057/pexels-photo-6098057.jpeg', NOW(), NOW()),
+('Home Delivery', 'Get your medicines delivered to your home', 10.00, 2, 2, 'https://images.pexels.com/photos/4392030/pexels-photo-4392030.jpeg', NOW(), NOW()),
+('Lab Test', 'Get lab tests done at home', 100.00, 1, 1, 'https://images.pexels.com/photos/263194/pexels-photo-263194.jpeg', NOW(), NOW()),
+('Prescription Renewal', 'Renew your prescription online', 20.00, 2, 2, 'https://images.pexels.com/photos/3683051/pexels-photo-3683051.jpeg', NOW(), NOW()),
+('Medication Reminders', 'Receive reminders to take your medications', 5.00, 1, 1, 'https://images.pexels.com/photos/7723583/pexels-photo-7723583.jpeg', NOW(), NOW()),
+('Health and Wellness Programs', 'Join health and wellness programs', 30.00, 2, 2, 'https://images.pexels.com/photos/5452284/pexels-photo-5452284.jpeg', NOW(), NOW()),
+('Emergency Services', 'Access emergency medical services', 200.00, 1, 1, 'https://images.pexels.com/photos/27088312/pexels-photo-27088312/free-photo-of-navy-trainee-standing-by-a-helicopter.jpeg', NOW(), NOW()),
+('Product Recommendations', 'Get personalized product recommendations', 0.00, 2, 2, 'https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg', NOW(), NOW());
 
 
 -- Wishlist Table
@@ -596,6 +561,23 @@ CREATE TABLE wishlist (
 INSERT INTO wishlist (user_id, item_name, description, created_at, updated_at) VALUES
 (1, 'New Pain Relief Medication', 'A new type of pain relief medication that is more effective.', NOW(), NOW()),
 (2, 'Organic Vitamin C', 'Organic Vitamin C supplements for better immune support.', NOW(), NOW());
+
+-- Shopping Cart Table
+DROP TABLE IF EXISTS shopping_cart;
+
+CREATE TABLE shopping_cart (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT,
+    product_id INT NOT NULL,
+    service_id INT,
+    quantity INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (service_id) REFERENCES services(id)
+);
 
 -- Create Indexes
 CREATE INDEX idx_users_email ON users (email);

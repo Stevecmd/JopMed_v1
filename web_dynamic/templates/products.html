@@ -5,36 +5,11 @@
 {% block content %}
 <div class="products-content">
     <h1>Our Products</h1>
-    <p>We offer a wide range of products to meet your medical supply needs, including ...</p>
+    <p>Browse our wide range of medical products, including medicines, supplements, and medical devices.</p>
     <div id="products-container" class="products-container">
         <!-- Products will be dynamically inserted here -->
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('http://127.0.0.1:5000/products')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            const productsContainer = document.getElementById('products-container');
-            data.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'product-card';
-                productCard.innerHTML = `
-                    <img src="${product.image_url || 'default-image.jpg'}" alt="${product.name}" class="product-image">
-                    <h2 class="product-name">${product.name}</h2>
-                    <p class="product-description">${product.description}</p>
-                    <p class="product-price">$${parseFloat(product.price).toFixed(2)}</p>
-                `;
-                productsContainer.appendChild(productCard);
-            });
-        })
-        .catch(error => console.error('Error fetching products:', error));
-});
-</script>
+<script src="{{ url_for('static', filename='scripts/products.js') }}"></script>
 {% endblock %}

@@ -101,6 +101,11 @@ class DBStorage:
         Session = scoped_session(sess_factory)
         self.__session = Session
 
+    @property
+    def session(self):
+        """Returns the current database session"""
+        return self.__session
+
     def close(self):
         """call remove() method on the private session attribute"""
         self.__session.remove()
@@ -157,7 +162,7 @@ class DBStorage:
         Filter objects by given criteria.
         """
         if cls not in classes.values():
-            return None
+            return []
 
         query = self.__session.query(cls)
         for key, value in kwargs.items():

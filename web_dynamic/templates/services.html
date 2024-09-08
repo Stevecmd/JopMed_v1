@@ -10,29 +10,6 @@
         <!-- Services will be dynamically inserted here -->
     </div>
 </div>
+<script src="{{ url_for('static', filename='scripts/service.js') }}"></script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('http://127.0.0.1:5000/services')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            const servicesContainer = document.getElementById('services-container');
-            data.forEach(service => {
-                const serviceCard = document.createElement('div');
-                serviceCard.className = 'service-card';
-                serviceCard.innerHTML = `
-                    <h2 class="service-name">${service.name}</h2>
-                    <p class="service-description">${service.description}</p>
-                `;
-                servicesContainer.appendChild(serviceCard);
-            });
-        })
-        .catch(error => console.error('Error fetching services:', error));
-});
-</script>
 {% endblock %}

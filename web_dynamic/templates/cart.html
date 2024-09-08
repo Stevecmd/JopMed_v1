@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Cart - JopMed{% endblock %}
+{% block title %}Shopping Cart - JopMed{% endblock %}
 
 {% block content %}
-<div class="cart-content">
-    <h1>My Cart</h1>
-    <p>These items are in my cart...</p>
+<div class="cart-container">
+    <h1>Your Shopping Cart</h1>
+    <div id="cart-items">
+        <!-- Cart items will be dynamically inserted here -->
+    </div>
+    <div id="cart-total">Total: $<span id="total-amount">0.00</span></div>
+    <button id="checkout-button">Proceed to Checkout</button>
 </div>
+<script src="{{ url_for('static', filename='scripts/cart.js') }}"></script>
 {% endblock %}

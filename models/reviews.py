@@ -5,6 +5,7 @@ from models.base_model import BaseModel, Base
 from os import getenv
 import sqlalchemy
 from sqlalchemy import Column, String, Integer, ForeignKey, Text
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship
 
 
@@ -36,6 +37,8 @@ class Reviews(BaseModel, Base):
 
         user = relationship("User", back_populates="reviews")
         product = relationship("Products", back_populates="reviews")
+
+        __table_args__ = (UniqueConstraint('user_id', 'product_id', name='_user_product_uc'),)
 
     def __init__(self, *args, **kwargs):
         """initializes addresses"""
