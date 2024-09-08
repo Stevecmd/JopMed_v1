@@ -44,6 +44,7 @@ Below is a breakdown of the key aspects:
 
 ## File Descriptions
 
+
 #### `models/` directory contains classes used for this project:
 [base_model.py](/models/base_model.py) - The BaseModel class from which future classes will be derived
 * `def __init__(self, *args, **kwargs)` - Initialization of the base model
@@ -75,18 +76,6 @@ Classes inherited from Base Model:
 * [tags.py](/models/tags.py)
 * [user_roles.py](/models/user_roles.py)
 * [users.py](/models/users.py)
-
-#### `/models/engine` directory contains File Storage class that handles JASON serialization and deserialization :
-[file_storage.py](/models/engine/file_storage.py) - serializes instances to a JSON file & deserializes back to instances
-* `def all(self)` - returns the dictionary __objects, optionally filtered by class
-* `def new(self, obj)` - sets in __objects the obj with key <obj class name>.id
-* `def save(self)` - serializes __objects to the JSON file (path: __file_path)
-* `def reload(self)` - deserializes the JSON file to __objects
-* `def delete(self)` - deletes obj from __objects if it’s inside
-* `def close(self)` - calls reload() method for deserializing the JSON file to objects
-* `def get(self, cls, id)` - returns the object based on the class name and its ID, or None if not found
-* `def count(self)` - counts the number of objects in storage, optionally filtered by class
-
 
 
 
@@ -129,9 +118,10 @@ Public Domain. No copy write protection.
 
 User roles are used to manage and control access to different parts of an application or system. They help in defining what actions a user can perform based on their assigned role. Here are some common purposes of user roles:
 
-Access Control: Restrict access to certain features or data based on the user's role. For example, an admin might have access to all parts of the system, while a regular user has limited access.
-Permission Management: Define specific permissions for each role, such as read, write, update, and delete permissions for different resources.
-Security: Enhance security by ensuring that only authorized users can perform certain actions, reducing the risk of unauthorized access.
-User Management: Simplify user management by grouping users with similar permissions into roles, making it easier to assign and manage permissions.
-Audit and Compliance: Maintain an audit trail of actions performed by users based on their roles, which is useful for compliance and monitoring purposes.
+`Access Control`: Restrict access to certain features or data based on the user's role. For example, an admin might have access to all parts of the system, while a regular user has limited access.
+`Permission Management`: Define specific permissions for each role, such as read, write, update, and delete permissions for different resources.
+`Security`: Enhance security by ensuring that only authorized users can perform certain actions, reducing the risk of unauthorized access.
+`User Management`: Simplify user management by grouping users with similar permissions into roles, making it easier to assign and manage permissions.
+`Audit and Compliance`: Maintain an audit trail of actions performed by users based on their roles, which is useful for compliance and monitoring purposes.
+<br />
 In the context of your SQL schema, the users_roles table is used to associate users with their respective roles, and the roles table defines the different roles available in the system. This setup allows you to manage user permissions and access control effectively.
