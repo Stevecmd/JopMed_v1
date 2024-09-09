@@ -5,3 +5,4 @@ api/v1/views/documentation/*/*.yml
 venv/*
 myfile.md
 
+start_services.log

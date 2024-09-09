@@ -19,19 +19,19 @@ Select the Python Interpreter: Make sure that Visual Studio Code is using the co
 
 # MySQL
 To set an empty password for the MySQL root user, follow these steps:
-Log in to MySQL as the root user using sudo:
+Log in to MySQL as the root user using sudo: <br />
 `sudo mysql -u root`
 
-Switch to the mysql database:
+Switch to the mysql database: <br />
 `USE mysql;`
 
-Update the authentication method for the root user to use the mysql_native_password plugin and set an empty password:
+Update the authentication method for the root user to use the mysql_native_password plugin and set an empty password: <br />
 `ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';`
 
-Flush the privileges to ensure that the changes take effect:
+Flush the privileges to ensure that the changes take effect: <br />
 `FLUSH PRIVILEGES;`
 
-Exit the MySQL shell:
+Exit the MySQL shell: <br />
 `EXIT;`
 
 0x04
@@ -45,10 +45,10 @@ Run the cat command again with the updated root user credentials:
 
 
 
-- JOPMED is alive!
+- JOPMED is alive! <br />
 `cat jopmed-dump-prod.sql | mysql -uroot -p`
 
-- Run the app
+- Run the app <br />
 `JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_dev_db JOPMED_TYPE_STORAGE=db python3 -m web_dynamic.jopmed`
 
 - Run the API
@@ -61,17 +61,19 @@ Ports: - `Frontend: 3000`
 0x05
 - Never Fail
 `python3 -m unittest discover tests 2>&1 | tail -1`
+
 Test the `Test` database and see the output:
 1. `JOPMED_ENV=test JOPMED_MYSQL_USER=JOPMED_test JOPMED_MYSQL_PWD=JOPMED_test_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_test_db JOPMED_TYPE_STORAGE=db python3 -m unittest discover tests 2>&1 /dev/null | tail -n 1`
 2. Test using the test database:
 `JOPMED_ENV=test JOPMED_MYSQL_USER=JOPMED_test JOPMED_MYSQL_PWD=JOPMED_test_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_test_db JOPMED_TYPE_STORAGE=db python3 -m unittest discover tests`
-3. Test .get() and .count() methods
+
+3. Test .get() and .count() methods <br />
 `python3 ./test_get_count.py`
 
-- Improve storage
+- Improve storage <br />
 `JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db ./test_get_count.py`
 
-- Status of your API
+- Status of your API <br />
 `JOPMED_MYSQL_USER=jopmed_dev JOPMED_MYSQL_PWD=jopmed_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=jopmed_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_HOST=0.0.0.0 JOPMED_API_PORT=5000 python3 -m api.v1.app`
 
 `curl -X GET http://0.0.0.0:5000/api/v1/status`
@@ -115,7 +117,7 @@ Output:
 ]
 
 ```
-Insert a user into the database:
+Insert a user into the database: <br />
 `curl -X POST http://0.0.0.0:5000/users -H "Content-Type: application/json" -d '{"username": "newuser", "email": "newuser@example.com", "password": "123456", "first_name": "Alice", "last_name": "Smith"}'`
 Output:
 ```sh
@@ -853,11 +855,46 @@ curl -X GET http://127.0.0.1:5000/shipping_methods/1
 
 
 0x06
-- Cash only
+- Cash only <br />
 `JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db python3 -m web_dynamic.0-JOPMED`
 
-- API status
+- API status <br />
 `JOPMED_MYSQL_USER=JOPMED_dev JOPMED_MYSQL_PWD=JOPMED_dev_pwd JOPMED_MYSQL_HOST=localhost JOPMED_MYSQL_DB=JOPMED_dev_db JOPMED_TYPE_STORAGE=db JOPMED_API_PORT=5001 python3 -m api.v1.app`
 
 Automatically update the `requirements.txt` file:
 `pip freeze > requirements.txt`
+
+
+Run the App:
+To start the app run: <br />
+`./start_services.sh`
+
+To start the app in a detached manner run: <br />
+`nohup ./start_services.sh > start_services.log 2>&1 &`
+
+To stop the app when running in a detached mode, get the process ID's: <br />
+`ps aux | grep start_services.sh`
+
+Stop each process using: <br />
+`kill <PID>`
+
+illustration:
+```sh
+ps aux | grep start_services.sh
+```
+
+Example output:
+```sh
+ubuntu   12345  0.0  0.1  123456  1234 pts/0    S    12:34   0:00 /bin/bash ./start_services.sh
+ubuntu   12346  0.0  0.1  123456  1234 pts/0    S    12:34   0:00 grep --color=auto start_services.sh
+```
+
+Kill the process
+```sh
+kill 12345
+```
+
+Alternatively one can kill the process by name ie:
+```sh
+pkill -f start_services.sh
+```
