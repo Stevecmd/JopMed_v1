@@ -898,3 +898,11 @@ Alternatively one can kill the process by name ie:
 ```sh
 pkill -f start_services.sh
 ```
+
+
+mysql -h db -u jopmed_dev -pjopmed_dev_pwd jopmed_dev_db
+
+SHOW DATABASES;
+USE jopmed_dev_db;
+SHOW TABLES;
+SELECT * FROM users WHERE username = 'eve';

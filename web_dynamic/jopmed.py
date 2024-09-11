@@ -23,7 +23,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session to l
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 # app_views = Blueprint('app_views', __name__, url_prefix='/api')
 
-API_BASE_URL = 'http://localhost:5000/api'
+# API_BASE_URL = 'http://localhost:5000/api'
+API_BASE_URL = 'http://api:5000/api'
 
 print("Starting Flask application...")
 

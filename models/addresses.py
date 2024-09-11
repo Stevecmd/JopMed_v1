@@ -5,7 +5,7 @@ import models
 from models.base_model import BaseModel, Base
 from os import getenv
 import sqlalchemy
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, Integer
 from sqlalchemy.orm import relationship
 
 
@@ -13,8 +13,8 @@ class Addresses(BaseModel, Base):
     """Representation of Addresses """
     __tablename__ = 'addresses'
     if models.storage_t == "db":
-        id = Column(String(60), primary_key=True, nullable=False)
-        user_id = Column(String(60), ForeignKey('users.id'), nullable=False)
+        id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+        user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
         city = Column(String(255), nullable=False)
         country = Column(String(255), nullable=False)
         zip_code = Column(String(255), nullable=False)

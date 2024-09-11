@@ -15,20 +15,21 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- -- Drop database
--- DROP DATABASE IF EXISTS jopmed_dev_db;
+-- Drop database
+DROP DATABASE IF EXISTS jopmed_dev_db;
 
 -- Create database + user if doesn't exist
 CREATE DATABASE IF NOT EXISTS jopmed_dev_db;
-CREATE USER IF NOT EXISTS 'jopmed_dev'@'%' IDENTIFIED BY 'jopmed_dev_pwd';
-GRANT ALL ON jopmed_dev_db.* TO 'jopmed_dev'@'%';
+CREATE USER IF NOT EXISTS 'jopmed_dev'@'localhost';
+SET PASSWORD FOR 'jopmed_dev'@'localhost' = 'jopmed_dev_pwd';
+GRANT ALL ON jopmed_dev_db.* TO 'jopmed_dev'@'localhost';
+GRANT SELECT ON performance_schema.* TO 'jopmed_dev'@'localhost';
 FLUSH PRIVILEGES;
 
 USE jopmed_dev_db;
-
--- Users Table
 DROP TABLE IF EXISTS users;
 
+-- Users Table
 CREATE TABLE users (
     id INT NOT NULL AUTO_INCREMENT,
     username VARCHAR(64) UNIQUE NOT NULL,
@@ -55,7 +56,6 @@ VALUES
 
 -- Addresses Table
 DROP TABLE IF EXISTS addresses;
-
 CREATE TABLE addresses (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
