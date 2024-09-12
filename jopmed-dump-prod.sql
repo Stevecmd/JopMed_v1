@@ -568,7 +568,7 @@ DROP TABLE IF EXISTS shopping_cart;
 CREATE TABLE shopping_cart (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT,
-    product_id INT NOT NULL,
+    product_id INT,
     service_id INT,
     quantity INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
