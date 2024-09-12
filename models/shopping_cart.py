@@ -30,6 +30,6 @@ class ShoppingCart(BaseModel, Base):
     def to_dict(self):
         """Returns a dictionary representation of the ShoppingCart instance"""
         item_dict = super().to_dict()
-        item_dict['product'] = self.product.to_dict() if self.product else None
+        item_dict['product'] = self.product.to_dict(include_image=True) if self.product else None
         item_dict['service'] = self.service.to_dict() if self.service else None
         return item_dict
