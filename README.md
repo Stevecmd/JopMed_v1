@@ -115,6 +115,7 @@ Steve Murimi - [Github](https://github.com/Stevecmd) / [Twitter](https://twitter
 ## License
 Public Domain. No copy write protection. 
 
+![Jopmed Sample App](Jopmed.png)
 
 User roles are used to manage and control access to different parts of an application or system. They help in defining what actions a user can perform based on their assigned role. Here are some common purposes of user roles:
 
@@ -125,3 +126,4 @@ User roles are used to manage and control access to different parts of an applic
 `Audit and Compliance`: Maintain an audit trail of actions performed by users based on their roles, which is useful for compliance and monitoring purposes.
 <br />
 In the context of your SQL schema, the users_roles table is used to associate users with their respective roles, and the roles table defines the different roles available in the system. This setup allows you to manage user permissions and access control effectively.
+
