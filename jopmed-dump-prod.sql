@@ -394,8 +394,13 @@ CREATE TABLE users_roles (
 
 -- Insert sample data into users_roles table
 INSERT INTO users_roles (user_id, role_id, created_at) VALUES
-(1, 1, NOW()), -- John Doe with role 1
-(2, 2, NOW()); -- Jane Doe with role 2
+(1, 1, NOW()), -- john Doe as admin
+(2, 2, NOW()); -- jane Doe with user
+(3, 2, NOW()); -- alice as user
+(4, 2, NOW()); -- bob as user
+(5, 3, NOW()); -- charlie as manager
+(6, 2, NOW()); -- david as user
+(7, 2, NOW()); -- eve as user
 
 -- Roles Table - defines the different roles available in the system
 DROP TABLE IF EXISTS roles;
@@ -412,8 +417,9 @@ CREATE TABLE roles (
 
 -- Insert sample data into roles table
 INSERT INTO roles (name, description, created_at, updated_at) VALUES
-('Admin', 'Administrator role', NOW(), NOW()),
-('Customer', 'Customer role', NOW(), NOW());
+('Admin', 'Administrator role with full access', NOW(), NOW()),
+('Customer', 'Customer role with standard access', NOW(), NOW());
+('Manager', 'Manager role with elevated access', NOW(), NOW());
 
 -- Comments Table
 DROP TABLE IF EXISTS comments;
