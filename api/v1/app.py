@@ -28,12 +28,13 @@ from models.users_roles import User_Roles
 from models.wishlist import Wishlist
 import os
 from os import environ
-from flask import Flask, request, url_for, session, make_response, send_file, request, jsonify
+from flask import Flask, request, url_for, session, make_response, send_file, request, jsonify, flash, redirect
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flasgger import Swagger
 from api.v1.views import app_views
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 import logging
 import string
@@ -107,24 +108,28 @@ def role_required(role_name):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if 'user_id' not in session:
-                return jsonify({'error': 'Authentication required'}), 401
+                flash('Please log in to access this page', 'error')
+                return redirect(url_for('jopmed'))
             
             user_id = session['user_id']
             user = storage.get(User, user_id)
             
             if not user:
-                return jsonify({'error': 'User not found'}), 404
+                flash('User not found', 'error')
+                return redirect(url_for('jopmed'))
             
             # Get the role ID for the required role
             role = storage.filter(Roles, name=role_name)
             if not role:
-                return jsonify({'error': 'Role not found'}), 404
+                flash('Role not found', 'error')
+                return redirect(url_for('jopmed'))
             role_id = role[0].id
             
             # Check if the user has the required role
             user_role = storage.filter(User_Roles, user_id=user_id, role_id=role_id)
             if not user_role:
-                return jsonify({'error': 'Insufficient permissions'}), 403
+                flash('You do not have permission to access this page', 'error')
+                return redirect(url_for('jopmed'))
             
             return f(*args, **kwargs)
         return decorated_function
@@ -235,6 +240,114 @@ def role_required(role):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+# admin routes
+def calculate_total_revenue():
+    total_revenue = storage.session.query(func.sum(Orders.total_amount)).scalar() or 0
+    return float(total_revenue)
+
+def get_user_growth(days=30):
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+    
+    user_growth = storage.session.query(
+        func.date(User.created_at).label('date'),
+        func.count(User.id).label('count')
+    ).filter(
+        User.created_at >= start_date,
+        User.created_at <= end_date
+    ).group_by(
+        func.date(User.created_at)
+    ).order_by(
+        func.date(User.created_at)
+    ).all()
+    
+    return [{'date': row.date.strftime('%Y-%m-%d'), 'count': row.count} for row in user_growth]
+
+def get_top_products(limit=5):
+    top_products = storage.session.query(
+        Products.id,
+        Products.name,
+        func.sum(Order_Items.quantity).label('total_sold')
+    ).join(
+        Order_Items, Products.id == Order_Items.product_id
+    ).group_by(
+        Products.id
+    ).order_by(
+        func.sum(Order_Items.quantity).desc()
+    ).limit(limit).all()
+    
+    return [{'id': row.id, 'name': row.name, 'total_sold': row.total_sold} for row in top_products]
+
+def get_order_trend(days=30):
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+    
+    order_trend = storage.session.query(
+        func.date(Orders.created_at).label('date'),
+        func.count(Orders.id).label('count')
+    ).filter(
+        Orders.created_at >= start_date,
+        Orders.created_at <= end_date
+    ).group_by(
+        func.date(Orders.created_at)
+    ).order_by(
+        func.date(Orders.created_at)
+    ).all()
+    
+    return [{'date': row.date.strftime('%Y-%m-%d'), 'count': row.count} for row in order_trend]
+
+def get_revenue_trend(days=30):
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+    
+    revenue_trend = storage.session.query(
+        func.date(Orders.created_at).label('date'),
+        func.sum(Orders.total_amount).label('revenue')
+    ).filter(
+        Orders.created_at >= start_date,
+        Orders.created_at <= end_date
+    ).group_by(
+        func.date(Orders.created_at)
+    ).order_by(
+        func.date(Orders.created_at)
+    ).all()
+    
+    return [{'date': row.date.strftime('%Y-%m-%d'), 'revenue': float(row.revenue)} for row in revenue_trend]
+
+# Update the admin_dashboard_data route to use these functions
+@app.route('/api/admin/dashboard')
+@role_required('admin')
+def admin_dashboard_data():
+    dashboard_data = {
+        'totalUsers': storage.count(User),
+        'totalProducts': storage.count(Products),
+        'totalOrders': storage.count(Orders),
+        'totalRevenue': calculate_total_revenue(),
+        'userGrowth': get_user_growth(),
+        'topProducts': get_top_products(),
+        'orderTrend': get_order_trend(),
+        'revenueTrend': get_revenue_trend()
+    }
+    return jsonify(dashboard_data)
+
+@app.route('/api/admin/users')
+@role_required('admin')
+def admin_users():
+    users = storage.all(User).values()
+    return jsonify([user.to_dict() for user in users])
+
+@app.route('/api/admin/products')
+@role_required('admin')
+def admin_products():
+    products = storage.all(Products).values()
+    return jsonify([product.to_dict() for product in products])
+
+@app.route('/api/admin/orders')
+@role_required('admin')
+def admin_orders():
+    orders = storage.all(Orders).values()
+    return jsonify([order.to_dict() for order in orders])
 
 @app.route('/api/reset-password', methods=['POST'])
 def reset_password():
@@ -1296,13 +1409,34 @@ def delete_role(role_id):
     storage.save()
     return make_response(jsonify({}), 200)
 
-def role_required(role):
+def role_required(role_name):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = get_current_user()
-            if not user or user.role != role:
-                return jsonify({'error': 'Unauthorized'}), 403
+            if 'user_id' not in session:
+                flash('Please log in to access this page', 'error')
+                return redirect(url_for('jopmed'))
+            
+            user_id = session['user_id']
+            user = storage.get(User, user_id)
+            
+            if not user:
+                flash('User not found', 'error')
+                return redirect(url_for('jopmed'))
+            
+            # Get the role ID for the required role
+            role = storage.filter(Roles, name=role_name)
+            if not role:
+                flash('Role not found', 'error')
+                return redirect(url_for('jopmed'))
+            role_id = role[0].id
+            
+            # Check if the user has the required role
+            user_role = storage.filter(User_Roles, user_id=user_id, role_id=role_id)
+            if not user_role:
+                flash('You do not have permission to access this page', 'error')
+                return redirect(url_for('jopmed'))
+            
             return f(*args, **kwargs)
         return decorated_function
     return decorator
