@@ -1,9 +1,11 @@
 import os
 import requests
-from flask import Flask, render_template, session, redirect, url_for, flash, jsonify, request, abort
+from flask import Flask, render_template, session, redirect, url_for, flash, jsonify, request, abort, make_response, send_file
 from flask_cors import CORS
+from functools import wraps
 from models import storage
 from models.users import User
+from models.orders import Orders
 from models.shopping_cart import ShoppingCart
 from models.products import Products
 from models.service import Service
@@ -11,6 +13,9 @@ from datetime import timedelta
 import requests
 import models
 import logging
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 
 app = Flask(__name__)
@@ -194,9 +199,6 @@ def get_products():
     products = storage.all(Products).values()
     return jsonify([product.to_dict(include_image=True) for product in products])
 
-@app.route('/admin', strict_slashes=False)
-def admin():
-    return render_template('admin.html')
 
 @app.route('/reviews', strict_slashes=False)
 def reviews():
@@ -241,6 +243,23 @@ def logout():
 def register():
     return render_template('register.html')
 
+# @app.route('/checkout', methods=['GET'])
+# def checkout():
+#     if 'user_id' not in session:
+#         flash('Please log in to proceed to checkout.', 'error')
+#         return redirect(url_for('login'))
+
+#     try:
+#         headers = {'User-ID': str(session['user_id'])}
+#         response = requests.get(f'{API_BASE_URL}/cart', headers=headers, timeout=5)
+#         response.raise_for_status()
+#         cart_items = response.json()
+#         return render_template('checkout.html', cart_items=cart_items)
+#     except requests.RequestException as e:
+#         app.logger.error(f"Failed to fetch cart items for checkout: {str(e)}")
+#         flash('Failed to fetch cart items. Please try again later.', 'error')
+#         return render_template('checkout.html', cart_items=[])
+
 @app.route('/checkout', methods=['GET'])
 def checkout():
     if 'user_id' not in session:
@@ -252,7 +271,17 @@ def checkout():
         response = requests.get(f'{API_BASE_URL}/cart', headers=headers, timeout=5)
         response.raise_for_status()
         cart_items = response.json()
-        return render_template('checkout.html', cart_items=cart_items)
+
+        # Check if address and payment method exist
+        address_response = requests.get(f'{API_BASE_URL}/user/address', headers=headers, timeout=5)
+        payment_response = requests.get(f'{API_BASE_URL}/user/payment-method', headers=headers, timeout=5)
+
+        needs_update = {
+            'address': address_response.status_code != 200,
+            'payment': payment_response.status_code != 200
+        }
+
+        return render_template('checkout.html', cart_items=cart_items, needs_update=needs_update)
     except requests.RequestException as e:
         app.logger.error(f"Failed to fetch cart items for checkout: {str(e)}")
         flash('Failed to fetch cart items. Please try again later.', 'error')
@@ -282,6 +311,19 @@ def register_payment_method():
             flash('Failed to register payment method. Please try again.', 'error')
             return render_template('register-payment-method.html')
     return render_template('register-payment-method.html')
+
+def generate_receipt(cart_items, user):
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    p.drawString(100, 750, f"Receipt for {user.name}")
+    y = 700
+    for item in cart_items:
+        p.drawString(100, y, f"{item.product.name if item.product else item.service.name}: ${item.quantity * (item.product.price if item.product else item.service.price)}")
+        y -= 20
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
 
 @app.route('/purchase/confirm', methods=['POST'])
 def confirm_purchase():
@@ -388,6 +430,88 @@ def remove_from_wishlist(item_id):
         app.logger.error(f"Failed to remove item from wishlist: {str(e)}")
         flash('Failed to remove item from wishlist. Please try again.', 'error')
         return redirect(url_for('view_wishlist'))
+
+
+# Admin routes
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access the admin panel', 'error')
+            return redirect(url_for('login'))
+        
+        try:
+            response = requests.get(f'{API_BASE_URL}/api/admin-only', cookies=request.cookies)
+            if response.status_code == 200:
+                return f(*args, **kwargs)
+            else:
+                flash('You do not have permission to access the admin panel', 'error')
+                return redirect(url_for('jopmed'))
+        except requests.RequestException as e:
+            app.logger.error(f"Failed to verify admin status: {str(e)}")
+            flash('Failed to verify admin status. Please try again.', 'error')
+            return redirect(url_for('jopmed'))
+    
+    return decorated_function
+
+@app.route('/admin', strict_slashes=False)
+@admin_required
+def admin():
+    return render_template('Admin.html')
+
+@app.route('/admin')
+def admin_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in to access the admin panel', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        response = requests.get(f'{API_BASE_URL}/admin/dashboard', cookies=request.cookies)
+        response.raise_for_status()
+        dashboard_data = response.json()
+        return render_template('Admin.html', dashboard_data=dashboard_data)
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch admin dashboard data: {str(e)}")
+        flash('Failed to load admin dashboard. Please try again.', 'error')
+        return redirect(url_for('home'))
+
+@app.route('/admin/users')
+def admin_users():
+    if 'user_id' not in session:
+        flash('Please log in to access the admin panel', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        response = requests.get(f'{API_BASE_URL}/admin/users', cookies=request.cookies)
+        response.raise_for_status()
+        users_data = response.json()
+        return render_template('admin_users.html', users=users_data)
+    except requests.RequestException as e:
+        app.logger.error(f"Failed to fetch admin users data: {str(e)}")
+        flash('Failed to load users data. Please try again.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+@app.route('/update-info', methods=['POST'])
+def update_info():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    user_id = session['user_id']
+    address = data.get('address')
+    payment_method = data.get('paymentMethod')
+
+    try:
+        # Update address
+        storage.update_address(user_id, address)  # Implement this method in your storage layer
+
+        # Update payment method
+        storage.update_payment_method(user_id, payment_method)  # Implement this method in your storage layer
+
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        app.logger.error(f"Failed to update information: {str(e)}")
+        return jsonify({'error': 'Failed to update information'}), 500
 
 if __name__ == "__main__":
     print("Running Flask application...")
