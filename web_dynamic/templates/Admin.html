@@ -1,10 +1,46 @@
 {% extends "base.html" %}
 
-{% block title %}Admin - JopMed{% endblock %}
+{% block title %}Admin Dashboard - JopMed{% endblock %}
 
 {% block content %}
 <div class="admin-content">
     <h1>Admin Dashboard</h1>
-    <p>Look at all the admin data...</p>
+    <div class="dashboard-grid">
+        <div class="dashboard-card" id="users-card">
+            <h2>Users</h2>
+            <p id="total-users">Loading...</p>
+            <canvas id="users-chart"></canvas>
+        </div>
+        <div class="dashboard-card" id="products-card">
+            <h2>Products</h2>
+            <p id="total-products">Loading...</p>
+            <canvas id="products-chart"></canvas>
+        </div>
+        <div class="dashboard-card" id="orders-card">
+            <h2>Orders</h2>
+            <p id="total-orders">Loading...</p>
+            <canvas id="orders-chart"></canvas>
+        </div>
+        <div class="dashboard-card" id="revenue-card">
+            <h2>Revenue</h2>
+            <p id="total-revenue">Loading...</p>
+            <canvas id="revenue-chart"></canvas>
+        </div>
+    </div>
+    <div class="admin-actions">
+        <h2>Quick Actions</h2>
+        <button onclick="location.href='/admin/users'">Manage Users</button>
+        <button onclick="location.href='/admin/products'">Manage Products</button>
+        <button onclick="location.href='/admin/orders'">Manage Orders</button>
+        <button onclick="location.href='/admin/reports'">Generate Reports</button>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const dashboardData = JSON.parse('{{ dashboard_data | tojson | safe }}');
+</script>
+<script src="{{ url_for('static', filename='scripts/admin/admin_dashboard.js') }}"></script>
 {% endblock %}
