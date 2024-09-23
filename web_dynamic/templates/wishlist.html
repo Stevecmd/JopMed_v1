@@ -1,38 +1,36 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="wishlist-container">
-    <h1>Your Wishlist</h1>
+<h1>Your Wishlist</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <form action="{{ url_for('add_to_wishlist') }}" method="post" class="wishlist-form">
-      <input type="text" name="item_name" placeholder="Item name" required>
-      <input type="text" name="description" placeholder="Description">
-      <button type="submit">Add to Wishlist</button>
-    </form>
-
-    <ul class="wishlist-items">
-    {% for item in wishlist_items %}
-      <li>
-        <form action="{{ url_for('update_wishlist_item', item_id=item.id) }}" method="post" class="update-form">
-          <input type="text" name="item_name" value="{{ item.item_name }}" required>
-          <input type="text" name="description" value="{{ item.description }}">
-          <button type="submit">Update</button>
-        </form>
-        <form action="{{ url_for('remove_from_wishlist', item_id=item.id) }}" method="post" class="remove-form">
-          <button type="submit">Remove</button>
-        </form>
-      </li>
-    {% else %}
-      <li>Your wishlist is empty.</li>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
     {% endfor %}
-    </ul>
-</div>
+  {% endif %}
+{% endwith %}
+
+<form action="{{ url_for('add_to_wishlist') }}" method="post">
+  <input type="text" name="item_name" placeholder="Item name" required>
+  <input type="text" name="description" placeholder="Description">
+  <button type="submit">Add to Wishlist</button>
+</form>
+
+<ul>
+{% for item in wishlist_items %}
+  <li>
+    <form action="{{ url_for('update_wishlist_item', item_id=item.id) }}" method="post">
+      <input type="text" name="item_name" value="{{ item.item_name }}" required>
+      <input type="text" name="description" value="{{ item.description }}">
+      <button type="submit">Update</button>
+    </form>
+    <form action="{{ url_for('remove_from_wishlist', item_id=item.id) }}" method="post">
+      <button type="submit">Remove</button>
+    </form>
+  </li>
+{% else %}
+  <li>Your wishlist is empty.</li>
+{% endfor %}
+</ul>
 {% endblock %}
