@@ -1,0 +1,82 @@
+body {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    min-height: 100vh; /* Full viewport height */
+    margin: 0; /* Remove default margin */
+    font-family: Arial, sans-serif; /* Set a professional font */
+    background-color: #f8f9fa; /* Light background color */
+}
+
+.wishlist-container {
+    background-color: white; /* White background for the container */
+    padding: 20px; /* Padding inside the container */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    width: 90%; /* Responsive width */
+    max-width: 400px; /* Maximum width for larger screens */
+    text-align: center; /* Center text inside the container */
+    display: flex; /* Use flexbox for centering */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
+    justify-content: center; /* Center items vertically */
+    margin: 0 auto; /* Center the container itself */
+}
+
+.wishlist-form, .update-form, .remove-form {
+    margin-bottom: 15px; /* Space between forms */
+    width: 100%; /* Full width for forms */
+    display: flex; /* Use flexbox for forms */
+    justify-content: space-between; /* Space between input and button */
+    align-items: center; /* Center items vertically */
+}
+
+input[type="text"] {
+    width: 100%; /* Full width input */
+    padding: 10px; /* Padding inside input */
+    border: 1px solid #ccc; /* Border color */
+    border-radius: 4px; /* Rounded corners for input */
+}
+
+button {
+    padding: 10px 15px; /* Padding for buttons */
+    border: none; /* Remove default border */
+    border-radius: 4px; /* Rounded corners for buttons */
+    cursor: pointer; /* Pointer cursor on hover */
+    background-color: #007bff; /* Button color */
+    color: white; /* Text color for buttons */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+    opacity: 0.9; /* Slightly transparent on hover */
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 600px) {
+    .wishlist-container {
+        padding: 15px; /* Reduce padding on smaller screens */
+    }
+
+    button {
+        width: 100%; /* Full width buttons on smaller screens */
+    }
+}
+
+.wishlist-items {
+    width: 100%; /* Ensure the list takes full width */
+    padding: 0; /* Remove default padding */
+    list-style: none; /* Remove bullet points */
+    display: flex; /* Use flexbox for the list */
+    flex-direction: column; /* Stack list items vertically */
+    align-items: center; /* Center list items */
+}
+
+.wishlist-items li {
+    width: 100%; /* Ensure each list item takes full width */
+    display: flex; /* Use flexbox for list item */
+    justify-content: space-between; /* Space between forms */
+    align-items: center; /* Center items vertically */
+    margin-bottom: 15px; /* Space between list items */
+}
