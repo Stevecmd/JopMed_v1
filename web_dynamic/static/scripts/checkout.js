@@ -23,49 +23,17 @@ document.addEventListener('DOMContentLoaded', function() {
     totalAmountSpan.textContent = calculateTotal();
 
     confirmPurchaseBtn.addEventListener('click', function() {
-        modalTotalAmount.textContent = totalAmountSpan.textContent;
-        modal.style.display = 'block';
-    });
-
-    clearCartBtn.addEventListener('click', function() {
-        if (confirm('Are you sure you want to clear your cart?')) {
-            fetch('/cart/clear', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    cartSummary.innerHTML = '<p>Your cart is empty.</p>';
-                    totalAmountSpan.textContent = '0.00';
-                    alert('Your cart has been cleared.');
-                } else {
-                    alert('Failed to clear cart. Please try again.');
-                }
-            })
-            .catch(error => console.error('Error clearing cart:', error));
+        // Check if address and payment method are provided
+        if (!addressIdInput.value || !paymentMethodInput.value) {
+            modalTotalAmount.textContent = totalAmountSpan.textContent;
+            modal.style.display = 'block'; // Show the modal if information is missing
+        } else {
+            // Proceed with the purchase if both are provided
+            confirmPayment();
         }
     });
 
-    closeBtn.addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-
-    window.addEventListener('click', function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    confirmPaymentBtn.addEventListener('click', function() {
-        if (!addressIdInput || !paymentMethodInput) {
-            console.error('Address ID or Payment Method input not found');
-            alert('Please provide address and payment method.');
-            return;
-        }
-
+    function confirmPayment() {
         fetch('http://localhost:5000/api/purchase/confirm', {
             method: 'POST',
             headers: {
@@ -100,5 +68,37 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error confirming purchase:', error);
             alert('An error occurred while processing your purchase. Please try again.');
         });
+    }
+
+    clearCartBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear your cart?')) {
+            fetch('/cart/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cartSummary.innerHTML = '<p>Your cart is empty.</p>';
+                    totalAmountSpan.textContent = '0.00';
+                    alert('Your cart has been cleared.');
+                } else {
+                    alert('Failed to clear cart. Please try again.');
+                }
+            })
+            .catch(error => console.error('Error clearing cart:', error));
+        }
+    });
+
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
     });
 });
